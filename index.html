@@ -1,0 +1,1803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aviation Maint. Intelligence (Auto-Load)</title>
+    
+    <!-- Libraries (Standardized CDNs) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Added ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* Base Styles */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; }
+        
+        /* UI Components */
+        .tab-btn.active { border-bottom: 3px solid #004B87; color: #004B87; font-weight: 600; }
+        .card { background: white; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .animate-fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        /* Custom Scrollbar */
+        .custom-scroll::-webkit-scrollbar { height: 8px; width: 8px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Loader */
+        .loader-spin { animation: spin 2s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Chart Interactivity */
+        .js-plotly-plot .plotly .cursor-pointer { cursor: pointer; }
+
+        /* Table Highlight & Search */
+        tr.selected-row td {
+            background-color: #fef9c3 !important;
+            border-top: 1px solid #fde047;
+            border-bottom: 1px solid #fde047;
+        }
+        .highlight-text { background-color: #fde047; font-weight: bold; color: black; }
+
+        /* Drilldown Link */
+        .drill-link { color: #DC2626; text-decoration: none; cursor: pointer; font-weight: bold; }
+        .drill-link:hover { color: #991B1B; }
+
+        /* Multi-Select Dropdown */
+        .ms-dropdown { display: none; position: absolute; background-color: white; min-width: 100%; max-height: 250px; overflow-y: auto; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2); z-index: 50; border: 1px solid #e5e7eb; border-radius: 0.375rem; margin-top: 4px; }
+        .ms-dropdown.show { display: block; }
+        .ms-option { padding: 8px 12px; display: flex; align-items: center; cursor: pointer; }
+        .ms-option:hover { background-color: #f3f4f6; }
+        .ms-checkbox { margin-right: 8px; }
+        .ms-search { padding: 8px; position: sticky; top: 0; background: white; border-bottom: 1px solid #e5e7eb; z-index: 10; }
+        
+        /* Trend Buttons */
+        .trend-btn { font-size: 0.75rem; padding: 0.25rem 0.75rem; border: 1px solid #e5e7eb; border-radius: 0.25rem; transition: all 0.2s; }
+        .trend-btn:hover { background-color: #f3f4f6; }
+        .trend-btn.active { background-color: #3b82f6; color: white; border-color: #3b82f6; }
+    </style>
+</head>
+<body class="text-gray-800" onclick="closeAllDropdowns(event)">
+
+    <!-- Navbar -->
+    <nav class="bg-slate-900 text-white p-4 shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-jet-fighter-up text-2xl text-blue-400"></i>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide">Maint. Intelligence</h1>
+                    <span class="text-xs text-blue-300">Ultimate V11.27 (Auto-Load Version)</span>
+                </div>
+            </div>
+            <div class="hidden md:block text-xs bg-blue-800 px-3 py-1 rounded-full">Pilot Complaint Analyzer</div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto p-6">
+        
+        <!-- Loading Screen (Shows Immediately) -->
+        <div id="loading-screen" class="flex flex-col items-center justify-center py-20 animate-fade-in">
+            <div class="relative">
+                <div class="w-24 h-24 border-4 border-blue-200 border-t-blue-600 rounded-full loader-spin"></div>
+                <i class="fa-solid fa-plane text-blue-600 text-xl absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></i>
+            </div>
+            <h2 class="mt-6 text-xl font-bold text-gray-700">Connecting to Data Source...</h2>
+            <p class="text-sm text-gray-500 mt-2">Loading data.csv from server...</p>
+            <div id="error-message" class="hidden mt-4 text-red-500 font-bold bg-red-100 p-4 rounded border border-red-300"></div>
+        </div>
+
+        <!-- Dashboard UI -->
+        <div id="dashboard-ui" class="hidden animate-fade-in">
+            
+            <!-- Global Filter Bar -->
+            <div class="bg-white p-4 rounded-lg shadow-md mb-6 border border-gray-200">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider"><i class="fa-solid fa-filter mr-2"></i>Global Filters</h3>
+                    <button onclick="resetFilters()" class="text-xs text-blue-600 hover:text-blue-800 font-semibold">Reset All</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-9 gap-3">
+                    <!-- Filters -->
+                    <div class="relative group"><label class="text-xs text-gray-500 block mb-1">Aircraft Type</label><button id="btn-type" onclick="toggleDropdown('ms-type', event)" class="w-full text-sm border rounded px-2 py-1 bg-gray-50 text-left flex justify-between items-center focus:ring-2 focus:ring-blue-500"><span class="truncate">All</span><i class="fa-solid fa-chevron-down text-xs text-gray-400"></i></button><div id="ms-type" class="ms-dropdown custom-scroll"></div></div>
+                    <div class="relative group"><label class="text-xs text-gray-500 block mb-1">Model</label><button id="btn-model" onclick="toggleDropdown('ms-model', event)" class="w-full text-sm border rounded px-2 py-1 bg-gray-50 text-left flex justify-between items-center focus:ring-2 focus:ring-blue-500"><span class="truncate">All</span><i class="fa-solid fa-chevron-down text-xs text-gray-400"></i></button><div id="ms-model" class="ms-dropdown custom-scroll"></div></div>
+                    <div class="relative group"><label class="text-xs text-gray-500 block mb-1">Registration</label><button id="btn-reg" onclick="toggleDropdown('ms-reg', event)" class="w-full text-sm border rounded px-2 py-1 bg-gray-50 text-left flex justify-between items-center focus:ring-2 focus:ring-blue-500"><span class="truncate">All</span><i class="fa-solid fa-chevron-down text-xs text-gray-400"></i></button><div id="ms-reg" class="ms-dropdown custom-scroll"></div></div>
+                    <div class="relative group"><label class="text-xs text-gray-500 block mb-1">ATA Chapter</label><button id="btn-ata" onclick="toggleDropdown('ms-ata', event)" class="w-full text-sm border rounded px-2 py-1 bg-gray-50 text-left flex justify-between items-center focus:ring-2 focus:ring-blue-500"><span class="truncate">All</span><i class="fa-solid fa-chevron-down text-xs text-gray-400"></i></button><div id="ms-ata" class="ms-dropdown custom-scroll"></div></div>
+                    <div class="relative group"><label class="text-xs text-gray-500 block mb-1">Quarter</label><button id="btn-quarter" onclick="toggleDropdown('ms-quarter', event)" class="w-full text-sm border rounded px-2 py-1 bg-gray-50 text-left flex justify-between items-center focus:ring-2 focus:ring-blue-500"><span class="truncate">All</span><i class="fa-solid fa-chevron-down text-xs text-gray-400"></i></button><div id="ms-quarter" class="ms-dropdown custom-scroll"></div></div>
+                    <div class="relative group"><label class="text-xs text-gray-500 block mb-1">Category</label><button id="btn-cat" onclick="toggleDropdown('ms-cat', event)" class="w-full text-sm border rounded px-2 py-1 bg-gray-50 text-left flex justify-between items-center focus:ring-2 focus:ring-blue-500"><span class="truncate">All</span><i class="fa-solid fa-chevron-down text-xs text-gray-400"></i></button><div id="ms-cat" class="ms-dropdown custom-scroll"></div></div>
+                    <div class="relative group"><label class="text-xs text-gray-500 block mb-1">Maint. Status</label><button id="btn-status" onclick="toggleDropdown('ms-status', event)" class="w-full text-sm border rounded px-2 py-1 bg-gray-50 text-left flex justify-between items-center focus:ring-2 focus:ring-blue-500"><span class="truncate">All</span><i class="fa-solid fa-chevron-down text-xs text-gray-400"></i></button><div id="ms-status" class="ms-dropdown custom-scroll"></div></div>
+                    <div><label class="text-xs text-gray-500 block mb-1">Start Date</label><input type="date" id="filter-date-start" class="w-full text-sm border rounded px-2 py-1 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none" onchange="applyFilters()"></div>
+                    <div><label class="text-xs text-gray-500 block mb-1">End Date</label><input type="date" id="filter-date-end" class="w-full text-sm border rounded px-2 py-1 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none" onchange="applyFilters()"></div>
+                </div>
+            </div>
+
+            <!-- Global Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                <div class="card p-4 border-t-4 border-blue-600"><div class="text-xs text-gray-500 uppercase font-bold">Total Reports</div><div class="text-2xl font-bold text-gray-800" id="kpi-total">0</div></div>
+                <div class="card p-4 border-t-4 border-red-500"><div class="text-xs text-gray-500 uppercase font-bold">Tech Issues</div><div class="text-2xl font-bold text-red-600" id="kpi-tech">0</div></div>
+                <div class="card p-4 border-t-4 border-yellow-600"><div class="text-xs text-gray-500 uppercase font-bold">Top ATA</div><div class="text-lg font-bold text-yellow-600 truncate" id="kpi-top-ata">-</div></div>
+                <div class="card p-4 border-t-4 border-purple-600"><div class="text-xs text-gray-500 uppercase font-bold">Top Aircraft</div><div class="text-2xl font-bold text-purple-600" id="kpi-sickest-ac">-</div></div>
+                <div class="card p-4 border-t-4 border-green-600"><div class="text-xs text-gray-500 uppercase font-bold">Avg Reports/Day</div><div class="text-2xl font-bold text-green-600" id="kpi-avg-day">0</div></div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="bg-white rounded-lg shadow-sm p-2 mb-6 overflow-x-auto">
+                <div class="flex space-x-2 min-w-max">
+                    <button id="nav-btn-overview" class="tab-btn active px-4 py-2 rounded hover:bg-gray-50 transition text-sm" onclick="switchTab('overview')"><i class="fa-solid fa-chart-pie mr-2"></i>Overview</button>
+                    <button id="nav-btn-fleet" class="tab-btn px-4 py-2 rounded hover:bg-gray-50 transition text-sm" onclick="switchTab('fleet')"><i class="fa-solid fa-plane mr-2"></i>Fleet Health</button>
+                    <button id="nav-btn-rootcause" class="tab-btn px-4 py-2 rounded hover:bg-gray-50 transition text-sm" onclick="switchTab('rootcause')"><i class="fa-solid fa-wrench mr-2"></i>Root Cause</button>
+                    <button id="nav-btn-phrase" class="tab-btn px-4 py-2 rounded hover:bg-gray-50 transition text-sm" onclick="switchTab('phrase')"><i class="fa-solid fa-quote-right mr-2"></i>Phrase Mining</button>
+                    <button id="nav-btn-chronic" class="tab-btn px-4 py-2 rounded hover:bg-gray-50 transition text-sm text-red-600 font-bold" onclick="switchTab('chronic')"><i class="fa-solid fa-clock-rotate-left mr-2"></i>Chronic</button>
+                    <button id="nav-btn-statement" class="tab-btn px-4 py-2 rounded hover:bg-gray-50 transition text-sm" onclick="switchTab('statement')"><i class="fa-solid fa-file-signature mr-2"></i>Problem Statement</button>
+                    <button id="nav-btn-rawdata" class="tab-btn px-4 py-2 rounded hover:bg-gray-50 transition text-sm" onclick="switchTab('rawdata')"><i class="fa-solid fa-table mr-2"></i>Raw Data</button>
+                </div>
+            </div>
+
+            <!-- Tabs Content -->
+            <div id="tab-overview" class="tab-content animate-fade-in">
+                <!-- Grid Layout: Trend (Left 75%) + Top 5 Cards (Right 25%) -->
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+                    
+                    <!-- Trend Analysis (Left 3/4) -->
+                    <div class="lg:col-span-3 card p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <div class="flex items-center space-x-3">
+                                <h3 class="font-bold text-gray-700">Defect Trend Analysis (By Model)</h3>
+                                <!-- Frequency Selector -->
+                                <div class="flex space-x-1">
+                                    <button onclick="setTrendFreq('Day')" id="freq-day" class="trend-btn active">Day</button>
+                                    <button onclick="setTrendFreq('Week')" id="freq-week" class="trend-btn">Week</button>
+                                    <button onclick="setTrendFreq('Month')" id="freq-month" class="trend-btn">Month</button>
+                                </div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <span class="text-xs text-blue-500 bg-blue-50 px-2 py-1 rounded"><i class="fa-solid fa-computer-mouse mr-1"></i>Drilldown</span>
+                                <button onclick="exportTrendData()" class="text-gray-400 hover:text-green-600 transition" title="Export to Excel"><i class="fa-solid fa-file-excel"></i></button>
+                            </div>
+                        </div>
+                        <div id="trend-chart" style="height:400px;"></div>
+                    </div>
+
+                    <!-- Top 5 Cards (Right 1/4) -->
+                    <div class="lg:col-span-1 flex flex-col gap-6">
+                        <!-- Top 5 Aircraft -->
+                        <div class="card p-4 flex-1">
+                            <h4 class="text-sm font-bold text-gray-700 border-b pb-2 mb-2"><i class="fa-solid fa-plane-up mr-2 text-purple-500"></i>Top 5 Aircraft</h4>
+                            <div id="top5-ac-list" class="space-y-2 overflow-y-auto max-h-[160px] custom-scroll">
+                                <!-- JS Populated -->
+                            </div>
+                        </div>
+                        <!-- Top 5 ATA -->
+                        <div class="card p-4 flex-1">
+                            <h4 class="text-sm font-bold text-gray-700 border-b pb-2 mb-2"><i class="fa-solid fa-wrench mr-2 text-yellow-500"></i>Top 5 ATA</h4>
+                            <div id="top5-ata-list" class="space-y-2 overflow-y-auto max-h-[160px] custom-scroll">
+                                <!-- JS Populated -->
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Row 2: Category & Status Charts -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Issue Category -->
+                    <div class="card p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-gray-700">Issue Category</h3>
+                            <button onclick="exportCatData()" class="text-gray-400 hover:text-green-600 transition" title="Export to Excel"><i class="fa-solid fa-file-excel"></i></button>
+                        </div>
+                        <div id="cat-chart" style="height:350px;"></div>
+                    </div>
+                    <!-- Maintenance Status -->
+                    <div class="card p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-gray-700">Maintenance Status</h3>
+                            <button onclick="exportStatusData()" class="text-gray-400 hover:text-green-600 transition" title="Export to Excel"><i class="fa-solid fa-file-excel"></i></button>
+                        </div>
+                        <div id="status-chart" style="height:350px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-fleet" class="tab-content hidden animate-fade-in">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <div class="card p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-gray-700">Aircraft Reliability</h3>
+                            <div class="flex items-center space-x-2">
+                                <div class="flex space-x-1">
+                                    <button onclick="setFleetLimit(5)" class="text-xs px-2 py-1 border rounded hover:bg-gray-100">Top 5</button>
+                                    <button onclick="setFleetLimit(10)" class="text-xs px-2 py-1 border rounded hover:bg-gray-100 bg-gray-100 font-bold">Top 10</button>
+                                    <button onclick="setFleetLimit('ALL')" class="text-xs px-2 py-1 border rounded hover:bg-gray-100">All</button>
+                                </div>
+                                <button onclick="exportFleetData()" class="text-gray-400 hover:text-green-600 transition" title="Export to Excel"><i class="fa-solid fa-file-excel"></i></button>
+                            </div>
+                        </div>
+                        <div id="fleet-chart" style="height:500px;"></div>
+                    </div>
+                    <div class="card p-6">
+                         <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-gray-700">Fleet Hierarchy Breakdown</h3></div>
+                        <div id="sunburst-chart" style="height:500px;"></div>
+                    </div>
+                </div>
+                
+                <div class="card p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-gray-700">Fleet Defect Heatmap (Aircraft vs ATA)</h3>
+                        <button onclick="exportMatrixData()" class="text-gray-400 hover:text-green-600 transition" title="Export to Excel"><i class="fa-solid fa-file-excel"></i></button>
+                    </div>
+                    <div id="matrix-chart" style="height:600px;"></div>
+                </div>
+            </div>
+
+            <div id="tab-rootcause" class="tab-content hidden animate-fade-in">
+                <div class="card p-6 mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-gray-700">ATA Pareto</h3>
+                        <button onclick="exportParetoData()" class="text-gray-400 hover:text-green-600 transition" title="Export to Excel"><i class="fa-solid fa-file-excel"></i></button>
+                    </div>
+                    <div id="pareto-chart" style="height:400px;"></div>
+                </div>
+
+                 <div class="card p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-gray-700">Top ATA Chapters (From Main ATA)</h3>
+                        <button onclick="exportRootCauseData()" class="text-gray-400 hover:text-green-600 transition" title="Export to Excel"><i class="fa-solid fa-file-excel"></i></button>
+                    </div>
+                    <p class="text-xs text-gray-500 mb-4">Breakdown of technical issues by ATA Chapter (derived from Main ATA)</p>
+                    <div class="flex flex-col lg:flex-row gap-6 h-[500px]">
+                        <div class="w-full lg:w-3/4" id="fc-chart"></div>
+                        <div class="w-full lg:w-1/4 overflow-y-auto border-l pl-4 custom-scroll" id="fc-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-phrase" class="tab-content hidden animate-fade-in">
+                <!-- 1. Word Frequency Analysis -->
+                <div class="card p-6 mb-6">
+                    <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+                        <h3 class="font-bold text-gray-700">Word Frequency Analysis (Raw Count)</h3>
+                        <div class="flex items-center space-x-2">
+                            <select id="ngram-col" class="bg-gray-50 border rounded text-sm px-3 py-1 focus:outline-none" onchange="runNgramAnalysis(currentFilteredData)">
+                                <option value="Complaint Text">Pilot Complaint</option>
+                                <option value="Operation Text">Operation Detail</option>
+                            </select>
+                            <button onclick="exportNgramData()" class="text-gray-400 hover:text-green-600 transition" title="Export to Excel"><i class="fa-solid fa-file-excel"></i></button>
+                        </div>
+                    </div>
+                    <div id="ngram-chart" style="height:400px;"></div>
+                </div>
+
+                <!-- 2. Defect Resolution Flow (Sankey) -->
+                <div class="card p-6 mb-6">
+                      <div class="flex justify-between items-center mb-4">
+                          <h3 class="font-bold text-gray-700">🌊 Defect Resolution Flow (Symptom -> Component -> Action)</h3>
+                          <button onclick="exportResolutionFlow()" class="text-gray-400 hover:text-green-600 transition" title="Export Sankey Flow"><i class="fa-solid fa-file-excel"></i></button>
+                     </div>
+                    <div id="echart-sankey" style="height: 500px;"></div>
+                </div>
+
+                <!-- 3. Advanced Text Mining Insights (Risk Matrix) -->
+                <div class="card p-6 mb-6">
+                    <h3 class="font-bold text-gray-700 mb-4"><i class="fa-solid fa-microscope mr-2 text-purple-600"></i>Advanced Text Mining Insights (ECharts)</h3>
+                    <div class="border rounded-lg p-4 relative">
+                         <div class="flex justify-between items-center mb-2">
+                            <h4 class="text-sm font-bold text-gray-600">🔥 Flight Phase Risk Matrix (Symptom vs Phase)</h4>
+                            <button onclick="exportRiskMatrix()" class="text-gray-400 hover:text-green-600 transition" title="Export Risk Matrix"><i class="fa-solid fa-file-excel"></i></button>
+                        </div>
+                        <div id="echart-heatmap" style="height: 400px;"></div>
+                    </div>
+                </div>
+            </div>
+
+             <div id="tab-chronic" class="tab-content hidden animate-fade-in">
+                <div class="card p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-red-700"><i class="fa-solid fa-triangle-exclamation mr-2"></i>Chronic Alert (Repeats in Selection)</h3>
+                        <button onclick="exportChronicData()" class="text-gray-400 hover:text-green-600 transition" title="Export to Excel"><i class="fa-solid fa-file-excel"></i></button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                                <tr>
+                                    <th class="px-4 py-3">AC REG</th>
+                                    <th class="px-4 py-3">ATA System</th>
+                                    <th class="px-4 py-3">Occurrences</th>
+                                    <th class="px-4 py-3">Last Date</th>
+                                    <th class="px-4 py-3">Last Status</th>
+                                    <th class="px-4 py-3">Latest Complaint</th>
+                                </tr>
+                            </thead>
+                            <tbody id="chronic-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-statement" class="tab-content hidden animate-fade-in">
+                <div class="card p-8">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-file-signature mr-2 text-blue-600"></i>Automated Problem Statement</h3>
+                            <p class="text-sm text-gray-500 mt-1">Generates technical reports based on repetitive defects found in current selection.</p>
+                        </div>
+                        <button onclick="copyStatement()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm border"><i class="fa-regular fa-copy mr-1"></i>Copy Text</button>
+                    </div>
+                    <div id="statement-content" class="bg-gray-50 p-6 rounded-lg border border-gray-200 font-mono text-sm text-gray-700 whitespace-pre-wrap leading-relaxed shadow-inner" style="min-height: 300px;"></div>
+                </div>
+            </div>
+
+            <div id="tab-rawdata" class="tab-content hidden animate-fade-in">
+                <div class="card p-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 space-y-2 md:space-y-0">
+                        <div>
+                            <h3 class="font-bold text-gray-700">Source Data View</h3>
+                            <div id="raw-count" class="text-xs text-gray-500"></div>
+                        </div>
+                        
+                        <div class="flex space-x-2">
+                             <!-- Export Full Data -->
+                            <button onclick="exportRawData()" class="text-sm bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded shadow-sm flex items-center">
+                                <i class="fa-solid fa-file-excel mr-2"></i>Export All
+                            </button>
+                            <!-- Table Search -->
+                            <div class="relative">
+                                <input type="text" id="table-search" placeholder="Search in table..." class="text-sm border border-gray-300 rounded pl-8 pr-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 w-64" onkeyup="searchTable()">
+                                <i class="fa-solid fa-search absolute left-2.5 top-2.5 text-gray-400 text-xs"></i>
+                            </div>
+
+                            <!-- Column Selector Button -->
+                            <div class="relative">
+                                <button onclick="toggleColMenu()" class="text-sm bg-white border border-gray-300 px-3 py-1.5 rounded shadow-sm hover:bg-gray-50 flex items-center">
+                                    <i class="fa-solid fa-table-columns mr-2 text-blue-500"></i>Select Columns <i class="fa-solid fa-chevron-down ml-2 text-xs"></i>
+                                </button>
+                                <div id="col-menu" class="hidden absolute right-0 bg-white border border-gray-200 shadow-xl rounded-lg mt-2 p-3 z-50 max-h-80 overflow-y-auto w-64">
+                                    <div class="text-xs font-bold text-gray-500 mb-2 uppercase">Toggle Columns</div>
+                                    <div id="col-checkboxes" class="grid grid-cols-1 gap-2"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Table Container with Fixed Height & Scroll -->
+                    <div class="overflow-auto custom-scroll max-h-[600px] border rounded shadow-inner relative">
+                        <!-- Updated class: removed whitespace-nowrap -->
+                        <table class="w-full text-sm text-left text-gray-600" id="raw-data-table"></table>
+                    </div>
+                    <div class="mt-2 text-xs text-gray-400 italic text-right">* Tip: Click a row to highlight it.</div>
+                    
+                    <!-- Pagination Controls -->
+                    <div id="pagination-controls" class="flex justify-between items-center mt-4 border-t pt-3">
+                         <div class="text-xs text-gray-500" id="page-info">Showing page 1</div>
+                         <div class="flex space-x-2">
+                             <button onclick="prevPage()" id="btn-prev" class="px-3 py-1 border rounded text-sm hover:bg-gray-100 disabled:opacity-50">Previous</button>
+                             <button onclick="nextPage()" id="btn-next" class="px-3 py-1 border rounded text-sm hover:bg-gray-100 disabled:opacity-50">Next</button>
+                         </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- 1. CONFIG & DICTIONARIES (STRICT LOGIC PRESERVED) ---
+        const wordCategories = {
+            "Component": ["VALVE", "SENSOR", "SWITCH", "LIGHT", "PUMP", "FAN", "BATTERY", "TIRE", "SEAT", "OVEN", "PRINTER", "DISPLAY", "MCU", "ECAM", "UNIT", "ACTUATOR", "LEVER", "BUTTON", "KNOB", "MASK", "GENERATOR", "FILTER", "DETECTOR", "TRANSMITTER", "MODULE", "CONTROLLER", "HARNESS", "CONNECTOR", "BEARING", "SEAL", "GASKET", "WHEEL", "BRAKE", "PAD", "SCREW", "NUT", "BOLT", "RIVET", "PANEL", "COVER", "DOOR", "WINDOW", "GLASS", "MIRROR", "LENS", "LAMP", "BULB", "FUSE", "BREAKER", "RELAY", "CONTACT", "SOLENOID", "MOTOR", "ENGINE", "BLADE", "VANE", "SHAFT", "GEAR", "PISTON", "CYLINDER", "ROD", "SPRING", "TUBE", "PIPE", "HOSE", "DUCT", "VENT", "OUTLET", "INLET", "NOZZLE", "ORIFICE", "PLUG", "CAP", "STRAP", "CLAMP", "CLIP", "BRACKET", "MOUNT", "SUPPORT", "FRAME", "RIB", "SPAR", "SKIN", "FAIRING", "CONE", "DOME", "TIP", "EDGE", "FLAP", "SLAT", "RUDDER", "ELEVATOR", "AILERON", "SPOILER", "TAB", "STABILIZER", "FIN", "WING", "TAIL", "NOSE", "BODY", "FUSELAGE", "CABIN", "COCKPIT", "GALLEY", "LAVATORY", "TOILET", "SINK", "BASIN", "FAUCET", "DRAIN", "TANK", "RESERVOIR", "BOTTLE", "ACCUMULATOR", "F/CTL", "CTL"],
+            "Symptom": ["FAIL", "INOP", "FAULT", "LEAK", "BROKEN", "STUCK", "LOOSE", "CRACKED", "VIBRATION", "NOISE", "SMELL", "INTERMITTENT", "DAMAGED", "LOW", "HIGH", "HOT", "COLD", "UNABLE", "MISSING", "DIRTY", "WORN", "CORRODED", "RUSTY", "BENT", "DENTED", "SCRATCHED", "CHIPPED", "PEELING", "FADED", "DISCOLORED", "BURNT", "SMOKE", "SPARK", "FLAME", "FIRE", "OVERHEAT", "FREEZE", "ICE", "RAIN", "WATER", "OIL", "FUEL", "HYDRAULIC", "AIR", "OXYGEN", "NITROGEN", "GAS", "FLUID", "LIQUID", "SOLID", "HARD", "SOFT", "ROUGH", "SMOOTH", "TIGHT", "FAST", "SLOW", "LATE", "EARLY", "WRONG", "INCORRECT", "BAD", "POOR", "GOOD", "BETTER", "WORSE", "NORMAL", "ABNORMAL", "UNUSUAL", "STRANGE", "WEIRD", "FUNNY", "ODD", "LOUD", "QUIET", "SILENT", "DARK", "DIM", "BRIGHT", "FLASHING", "BLINKING", "STEADY", "ON", "OFF", "OPEN", "CLOSED", "LOCKED", "UNLOCKED", "JAMMED", "BLOCKED", "CLOGGED", "RESTRICTED", "OBSTRUCTED"],
+            "Location": ["L", "R", "L/H", "R/H", "LH", "RH", "LEFT", "RIGHT", "FWD", "AFT", "CTR", "CENTER", "UPPER", "LOWER", "TOP", "BOTTOM", "INBD", "OUTBD", "INBOARD", "OUTBOARD", "CAPT", "FO", "ENG1", "ENG2", "POS", "ZONE", "SIDE", "REAR", "FRONT", "MID", "MAIN"]
+        };
+
+        const flightPhases = {
+            "TAKEOFF": ["TAKEOFF", "T/O", "TO", "LIFT OFF"],
+            "CLIMB": ["CLIMB", "CLB", "ASCENT"],
+            "CRUISE": ["CRUISE", "CRZ", "FLT", "AIRBORNE", "LEVEL"],
+            "DESCENT": ["DESCENT", "DES", "DSC"],
+            "LANDING": ["LANDING", "LNDG", "TOUCHDOWN", "ROLLOUT"],
+            "TAXI": ["TAXI", "TXI", "PUSHBACK"],
+            "PARK": ["PARK", "RAMP", "GATE", "GROUND", "GND", "STATIONARY"]
+        };
+
+        const actionKeywords = ["RESET", "REPLACED", "REPAIRED", "ADJUSTED", "DEFERRED", "INSPECTED", "SERVICED", "CLEANED", "LUBRICATED", "SECURED", "REMOVED"];
+
+        const ataDescriptions = { "00": "Product - General", "05": "Scheduled/unscheduled maintenance", "06": "Dimensions and Areas", "07": "Lifting and Shoring", "08": "Leveling and weighing", "09": "Towing and Taxiing", "10": "Parking, Mooring, Storage", "11": "Placards and Markings", "12": "Servicing", "20": "Standard Practices - Airframe", "21": "Air Conditioning", "22": "Auto Flight", "23": "Communications", "24": "Electrical Power", "25": "Equipment/Furnishings", "26": "Fire Protection", "27": "Flight Controls", "28": "Fuel", "29": "Hydraulic Power", "30": "Ice and Rain Protection", "31": "Indicating/Recording Systems", "32": "Landing Gear", "33": "Lights", "34": "Navigation", "35": "Oxygen", "36": "Pneumatic", "38": "Water/Waste", "42": "Integrated Modular Avionics", "44": "Cabin Systems", "45": "Central Maintenance System", "46": "Information Systems", "47": "Inert Gas System", "49": "Airborne Auxiliary Power", "50": "Cargo/Accessory Compartments", "51": "Standard Practices - Structures", "52": "Doors", "53": "Fuselage", "54": "Nacelles / Pylons", "55": "Stabilizers", "56": "Windows", "57": "Wings", "70": "Standard Practices - Engine", "71": "Power Plant", "72": "Engine", "73": "Engine Fuel and Control", "74": "Ignition", "75": "Air", "76": "Engine Controls", "77": "Engine Indicating", "78": "Exhaust", "79": "Oil", "80": "Starting", "91": "Air Vehicle Wiring" };
+
+        let rawData = [], processedData = [], currentFilteredData = [];
+        let visibleColumns = new Set();
+        let activeDropdown = null;
+        let currentFleetLimit = 10;
+        let currentTrendFreq = 'Day'; // Default frequency
+        
+        // V11.6 Pagination Globals (Preserved)
+        let currentPage = 1;
+        const rowsPerPage = 2000;
+        let currentRenderData = []; 
+
+        // GLOBAL: Store data for Phrase Mining to enable lazy rendering
+        let phraseDataStore = [];
+        let heatmapDataExport = [];
+        let sankeyDataExport = [];
+        
+        // --- AUTO LOAD LOGIC ---
+        window.onload = function() {
+            // Start fetching data immediately
+            fetch('./data.csv')
+                .then(response => {
+                    if (!response.ok) throw new Error("Could not find data.csv");
+                    return response.text();
+                })
+                .then(csvText => {
+                    Papa.parse(csvText, {
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: res => {
+                            rawData = res.data;
+                            if (rawData.length > 0) {
+                                analyzeData();
+                                document.getElementById('loading-screen').classList.add('hidden');
+                                document.getElementById('dashboard-ui').classList.remove('hidden');
+                            } else {
+                                throw new Error("CSV file is empty");
+                            }
+                        }
+                    });
+                })
+                .catch(error => {
+                    const errDiv = document.getElementById('error-message');
+                    errDiv.classList.remove('hidden');
+                    errDiv.innerHTML = `Error: ${error.message}<br><br>Please make sure you have a file named 'data.csv' uploaded in the same GitHub repository.`;
+                });
+        };
+
+        // --- 3. BUSINESS LOGIC (FLEET MAPPING & PARSING) ---
+        function getFleetInfo(reg) {
+            if (!reg) return { model: "Unknown", type: "Unknown" };
+            reg = reg.toUpperCase().trim();
+            const txSeries = ["HS-TXA", "HS-TXB", "HS-TXC", "HS-TXD", "HS-TXE", "HS-TXF", "HS-TXG", "HS-TXH", "HS-TXJ", "HS-TXK", "HS-TXL", "HS-TXM", "HS-TXN", "HS-TXO", "HS-TXP", "HS-TXQ", "HS-TXR", "HS-TXS", "HS-TXT", "HS-TXU"];
+            if (txSeries.includes(reg)) return { model: "A320-232", type: "A320" };
+            const toSeries = ["HS-TOA", "HS-TOB", "HS-TOC", "HS-TOD", "HS-TOE", "HS-TOF", "HS-TOG", "HS-TOH", "HS-TOI", "HS-TOJ", "HS-TOK", "HS-TOL"];
+            if (toSeries.includes(reg)) return { model: "A321-251NX", type: "A321" }; 
+            const teSeries = ["HS-TEN", "HS-TEO", "HS-TEP", "HS-TEV", "HS-TEW", "HS-TEX"];
+            if (teSeries.includes(reg)) return { model: "A330-343", type: "A330" };
+            if (reg.startsWith("HS-TH")) return { model: "A350-941", type: "A350" };
+            const tjSeries = ["HS-TJR", "HS-TJS", "HS-TJT", "HS-TJV", "HS-TJW"];
+            if (tjSeries.includes(reg)) return { model: "2D7ER", type: "B777" };
+            if (reg >= "HS-TKK" && reg <= "HS-TKR") return { model: "B777-3ER", type: "B777" };
+            if (reg >= "HS-TKU" && reg <= "HS-TKZ") return { model: "B777-3D7", type: "B777" };
+            if (["HS-TTA", "HS-TTB", "HS-TTC"].includes(reg)) return { model: "B777-300E", type: "B777" };
+            if (reg >= "HS-TQA" && reg <= "HS-TQF") return { model: "B787-8", type: "B787" };
+            if (reg >= "HS-TWA" && reg <= "HS-TWD") return { model: "B787-9", type: "B787" };
+            return { model: "Unknown", type: "Unknown" };
+        }
+
+        function getMaintenanceStatus(text) {
+            if (!text) return 'Other';
+            const t = text.toUpperCase();
+            if (t.includes('DEFERRED')) return 'Defer';
+            if (t.includes('HARD FAULT') || t.includes('REPLACEMENT') || t.includes('SOFT FAULT') || t.includes('ADJUST') || t.includes('CLEANING') || t.includes('SERVICE')) return 'Fix';
+            if (t.includes('INSP') || t.includes('TEST') || t.includes('NFF') || t.includes('RESET')) return 'Inspect';
+            if (t.includes('INFO') || t.includes('NOTE')) return 'Info';
+            return 'Other';
+        }
+        
+        function getStatusBadge(status) {
+            let colorClass = "bg-gray-100 text-gray-800";
+            if (status === 'Defer') colorClass = "bg-yellow-100 text-yellow-800";
+            else if (status === 'Fix') colorClass = "bg-red-100 text-red-800";
+            else if (status === 'Inspect') colorClass = "bg-blue-100 text-blue-800";
+            return `<span class="${colorClass} text-xs font-medium mr-2 px-2.5 py-0.5 rounded border border-${colorClass.split('-')[1]}-400">${status}</span>`;
+        }
+
+        // CORE DATA PROCESSING
+        function analyzeData() {
+            processedData = rawData.map(row => {
+                const date = parseDate(row['Complaint Date']);
+                let q = "Unknown";
+                if(date) { q = `Q${Math.ceil((date.getMonth() + 1) / 3)}`; }
+                const ataInfo = parseATA(row['Main ATA']);
+                const fleetInfo = getFleetInfo(row['ACREG']);
+                
+                let fullComplaint = row['Complaint Text'] || "";
+                let techInfo = "";
+                let pureComplaint = fullComplaint;
+                
+                // Regex for cleaning technician info (Rule 2: Clean Text)
+                const splitMatch = fullComplaint.match(/(Name\s*:|Auth no\s*:|Created by\s*:|\-{3,})[\s\S]*/i);
+                if (splitMatch) {
+                    techInfo = splitMatch[0].trim();
+                    pureComplaint = fullComplaint.substring(0, splitMatch.index).trim();
+                }
+
+                const maintStatus = getMaintenanceStatus(row['Activity Code Text']);
+
+                return {
+                    ...row,
+                    'Complaint Date': date ? formatDate(date) : row['Complaint Date'],
+                    'Complaint Text': pureComplaint,
+                    'Technician Info': techInfo,
+                    'Maintenance_Status': maintStatus, 
+                    pDate: date,
+                    quarter: q,
+                    cleanComp: cleanText(pureComplaint),
+                    category: categorize(row),
+                    ataCode: ataInfo.code,
+                    ataLabel: ataInfo.label,
+                    acModel: fleetInfo.model,
+                    acType: fleetInfo.type
+                };
+            });
+            // Sort by Date Ascending
+            processedData.sort((a,b) => (a.pDate && b.pDate) ? a.pDate - b.pDate : 0);
+            
+            initFilters();
+            initColumnSelector(); 
+            applyFilters(); 
+        }
+
+        function drilldownView(subset, titleText) {
+            switchTab('rawdata');
+            currentPage = 1; // Reset pagination
+            renderRawTable(subset);
+            document.getElementById('raw-count').innerHTML = `<span class="text-blue-600 font-bold"><i class="fa-solid fa-filter mr-1"></i>Drilldown: ${titleText} (${subset.length} rows)</span> <button onclick="applyFilters()" class="ml-2 text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded text-gray-700">Reset View</button>`;
+        }
+        
+        function searchTable() {
+            const query = document.getElementById('table-search').value.toLowerCase();
+            currentPage = 1; 
+            if (!query) {
+                renderRawTable(currentFilteredData);
+                return;
+            }
+            // Real-time Table Filter
+            const searchResults = currentFilteredData.filter(row => {
+                return Object.values(row).some(val => 
+                    String(val).toLowerCase().includes(query)
+                );
+            });
+            renderRawTable(searchResults, query); 
+        }
+
+        // --- 4. FILTERS & INTERACTIVITY ---
+        function toggleDropdown(id, event) {
+            event.stopPropagation();
+            const el = document.getElementById(id);
+            if (activeDropdown && activeDropdown !== el) activeDropdown.classList.remove('show');
+            el.classList.toggle('show');
+            activeDropdown = el.classList.contains('show') ? el : null;
+        }
+
+        function closeAllDropdowns(event) {
+            if (activeDropdown && !event.target.closest('.group')) {
+                activeDropdown.classList.remove('show');
+                activeDropdown = null;
+            }
+        }
+
+        function initFilters() {
+            const sets = { 'ms-type': new Set(), 'ms-model': new Set(), 'ms-reg': new Set(), 'ms-ata': new Set(), 'ms-quarter': new Set(), 'ms-cat': new Set(), 'ms-status': new Set() };
+            processedData.forEach(d => {
+                if(d.acType) sets['ms-type'].add(d.acType);
+                if(d.acModel) sets['ms-model'].add(d.acModel);
+                if(d.ACREG) sets['ms-reg'].add(d.ACREG);
+                if(d.ataLabel) sets['ms-ata'].add(d.ataLabel);
+                if(d.quarter) sets['ms-quarter'].add(d.quarter);
+                if(d.category) sets['ms-cat'].add(d.category);
+                if(d.Maintenance_Status) sets['ms-status'].add(d.Maintenance_Status);
+            });
+            Object.keys(sets).forEach(id => renderMultiSelect(id, sets[id]));
+        }
+
+        function renderMultiSelect(id, optionsSet) {
+            const container = document.getElementById(id);
+            const sortedOptions = [...optionsSet].sort();
+            let html = `<div class="ms-search"><input type="text" placeholder="Search..." class="w-full text-xs border p-1 rounded" onkeyup="filterOptions(this)"></div>`;
+            html += `<div class="ms-option" onclick="toggleSelectAll('${id}', event)"><input type="checkbox" class="ms-checkbox" value="ALL"><span class="text-sm font-bold text-blue-600">Select All</span></div>`;
+            sortedOptions.forEach(opt => {
+                html += `<div class="ms-option" onclick="toggleOption(this, '${id}', event)"><input type="checkbox" class="ms-checkbox" value="${opt}"><span class="text-sm">${opt}</span></div>`;
+            });
+            container.innerHTML = html;
+            updateButtonLabel(id);
+        }
+
+        function filterOptions(input) {
+            const filter = input.value.toUpperCase();
+            const container = input.closest('.ms-dropdown');
+            container.querySelectorAll('.ms-option').forEach((item, idx) => {
+                if(idx === 0) return;
+                const text = item.innerText.toUpperCase();
+                item.style.display = text.indexOf(filter) > -1 ? "" : "none";
+            });
+        }
+
+        function toggleSelectAll(id, event) {
+            if (event && event.target.tagName === 'INPUT') event.stopPropagation();
+            const container = document.getElementById(id);
+            const allCheckbox = container.querySelector('input[value="ALL"]');
+            if (event && event.target !== allCheckbox) allCheckbox.checked = !allCheckbox.checked;
+            const newState = allCheckbox.checked;
+            const checkboxes = container.querySelectorAll('input[type="checkbox"]:not([value="ALL"])');
+            checkboxes.forEach(cb => {
+                if(cb.closest('.ms-option').style.display !== 'none') cb.checked = newState;
+            });
+            updateButtonLabel(id);
+            applyFilters();
+            if (event) event.stopPropagation();
+        }
+
+        function toggleOption(div, id, event) {
+            const checkbox = div.querySelector('input');
+            const isCheckbox = event.target === checkbox;
+            if (!isCheckbox) checkbox.checked = !checkbox.checked;
+            const container = document.getElementById(id);
+            const allCheckbox = container.querySelector('input[value="ALL"]');
+            const allOptions = container.querySelectorAll('input[type="checkbox"]:not([value="ALL"])');
+            const allChecked = Array.from(allOptions).every(cb => cb.checked);
+            allCheckbox.checked = allChecked;
+            updateButtonLabel(id);
+            applyFilters();
+        }
+
+        function updateButtonLabel(id) {
+            const container = document.getElementById(id);
+            const checkboxes = container.querySelectorAll('input[type="checkbox"]:not([value="ALL"]):checked');
+            const total = container.querySelectorAll('input[type="checkbox"]:not([value="ALL"])').length;
+            const btnId = id.replace('ms-', 'btn-');
+            const btnSpan = document.querySelector(`#${btnId} span`);
+            
+            if (checkboxes.length === 0 || checkboxes.length === total) {
+                btnSpan.innerText = "All"; 
+            } else if (checkboxes.length === 1) {
+                btnSpan.innerText = checkboxes[0].value;
+            } else {
+                btnSpan.innerText = `${checkboxes.length} Selected`;
+            }
+        }
+
+        function getSelectedValues(id) {
+            const container = document.getElementById(id);
+            return new Set(Array.from(container.querySelectorAll('input[type="checkbox"]:not([value="ALL"]):checked')).map(cb => cb.value));
+        }
+
+        function resetFilters() {
+            ['ms-type', 'ms-model', 'ms-reg', 'ms-ata', 'ms-quarter', 'ms-cat', 'ms-status'].forEach(id => {
+                const container = document.getElementById(id);
+                container.querySelectorAll('input').forEach(cb => cb.checked = false); 
+                container.querySelectorAll('.ms-option').forEach(opt => opt.style.display = ''); 
+                updateButtonLabel(id);
+            });
+            ['filter-date-start', 'filter-date-end'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('table-search').value = '';
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const sTypes = getSelectedValues('ms-type');
+            const sModels = getSelectedValues('ms-model');
+            const sRegs = getSelectedValues('ms-reg');
+            const sAtas = getSelectedValues('ms-ata');
+            const sQuarters = getSelectedValues('ms-quarter');
+            const sCats = getSelectedValues('ms-cat');
+            const sStatus = getSelectedValues('ms-status');
+            
+            // OPTIMIZED DATE FILTER: Set times to cover full day (00:00 to 23:59)
+            let dStart = null;
+            if (document.getElementById('filter-date-start').value) {
+                dStart = new Date(document.getElementById('filter-date-start').value);
+                dStart.setHours(0,0,0,0);
+            }
+            
+            let dEnd = null;
+            if (document.getElementById('filter-date-end').value) {
+                dEnd = new Date(document.getElementById('filter-date-end').value);
+                dEnd.setHours(23,59,59,999);
+            }
+
+            currentFilteredData = processedData.filter(d => {
+                if (sTypes.size > 0 && !sTypes.has(d.acType)) return false;
+                if (sModels.size > 0 && !sModels.has(d.acModel)) return false;
+                if (sRegs.size > 0 && !sRegs.has(d.ACREG)) return false;
+                if (sAtas.size > 0 && !sAtas.has(d.ataLabel)) return false;
+                if (sQuarters.size > 0 && !sQuarters.has(d.quarter)) return false;
+                if (sCats.size > 0 && !sCats.has(d.category)) return false;
+                if (sStatus.size > 0 && !sStatus.has(d.Maintenance_Status)) return false;
+                
+                if (d.pDate) {
+                    if (dStart && d.pDate < dStart) return false;
+                    if (dEnd && d.pDate > dEnd) return false;
+                }
+                return true;
+            });
+
+            if(document.getElementById('table-search').value) {
+                searchTable();
+            } else {
+                updateDashboard(currentFilteredData);
+            }
+        }
+
+        function updateDashboard(data) {
+            renderKPIs(data);
+            renderTrend(data); 
+            
+            // Explicitly call chart functions (Decoupled in V11.27)
+            renderCategoryChart(data); 
+            renderStatusChart(data);
+
+            renderFleetHealth(data);
+            renderFaultCodes(data);
+            runNgramAnalysis(data);
+            renderChronic(data);
+            renderMatrix(data); 
+            renderProblemStatement(data);
+            renderRawTable(data);
+            renderTop5Cards(data); 
+        }
+
+        // --- 5. EXPORT & UTILS ---
+        function exportToExcel(data, fileName, sheetName = 'Data') {
+            if (!data || data.length === 0) { alert("No data to export!"); return; }
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, sheetName);
+            XLSX.writeFile(wb, `${fileName}_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.xlsx`);
+        }
+
+        function exportTrendData() {
+            const data = currentFilteredData.filter(d => d.category === 'Tech').map(d => ({
+                Date: d['Complaint Date'], Model: d.acModel, Registration: d.ACREG, Complaint: d.cleanComp
+            }));
+            exportToExcel(data, 'Trend_Analysis_Data');
+        }
+
+        function exportCatData() {
+            const cats = { 'Tech': 0, 'Info': 0 };
+            currentFilteredData.forEach(d => { if(d.category in cats) cats[d.category]++; });
+            const data = Object.keys(cats).map(k => ({ Category: k, Count: cats[k] }));
+            exportToExcel(data, 'Category_Data');
+        }
+        
+        function exportStatusData() {
+            const statuses = {};
+            currentFilteredData.forEach(d => { if(d.Maintenance_Status) statuses[d.Maintenance_Status] = (statuses[d.Maintenance_Status]||0)+1; });
+            const data = Object.keys(statuses).map(k => ({ Status: k, Count: statuses[k] }));
+            exportToExcel(data, 'Maintenance_Status_Data');
+        }
+
+        function exportFleetData() {
+            const counts = {};
+            currentFilteredData.filter(d => d.category === 'Tech').forEach(d => {
+                if(d.ACREG) counts[d.ACREG] = (counts[d.ACREG] || 0) + 1;
+            });
+            const data = Object.entries(counts).map(([k,v]) => ({ Registration: k, Defect_Count: v })).sort((a,b) => b.Defect_Count - a.Defect_Count);
+            exportToExcel(data, 'Fleet_Reliability_Data');
+        }
+
+        function exportParetoData() {
+             const counts = {};
+            currentFilteredData.filter(d => d.category === 'Tech').forEach(d => {
+                if(d.ataLabel) counts[d.ataLabel] = (counts[d.ataLabel] || 0) + 1;
+            });
+            const data = Object.entries(counts).map(([k,v]) => ({ ATA: k, Count: v })).sort((a,b) => b.Count - a.Count);
+            let sum = 0;
+            const total = data.reduce((a,b) => a + b.Count, 0);
+            data.forEach(d => {
+                sum += d.Count;
+                d['Cumulative %'] = ((sum / total) * 100).toFixed(2) + '%';
+            });
+            exportToExcel(data, 'ATA_Pareto_Data');
+        }
+
+        function exportRootCauseData() {
+             const counts = {};
+            currentFilteredData.filter(d => d.category === 'Tech').forEach(d => {
+                if(d.ataLabel) counts[d.ataLabel] = (counts[d.ataLabel] || 0) + 1;
+            });
+            const data = Object.entries(counts).map(([k,v]) => ({ ATA_Chapter: k, Count: v })).sort((a,b) => b.Count - a.Count);
+            exportToExcel(data, 'Top_ATA_Chapters');
+        }
+
+        function exportNgramData() {
+             const col = document.getElementById('ngram-col').value;
+             const stopWords = new Set(["THE","AND","TO","OF","IN","IS","FOR","WITH","ON","AT","FROM","BY","NAME","AUTH","NO","DATE","TIME","REF","AMM","TASK","REV","ACTION","CHECKED","NOTED","FOUND","HAS", "WAS", "MSG"]);
+            const phraseCounts = {};
+            currentFilteredData.forEach(row => {
+                let txt = row[col]; if(!txt) return;
+                txt = txt.replace(/(Name\s*:|Auth no\s*:|Created by\s*:|\-{3,}).*/gi, "");
+                const words = txt.replace(/[^a-zA-Z0-9\/\-\s]/g, ' ').toUpperCase().split(/\s+/).filter(w => w.length>2 && !stopWords.has(w) && isNaN(w));
+                // LOGIC: Count rows (Unique per row)
+                const rowBigrams = new Set();
+                words.forEach(w => rowBigrams.add(w));
+                rowBigrams.forEach(bg => {
+                    phraseCounts[bg] = (phraseCounts[bg]||0)+1;
+                });
+            });
+            const data = Object.entries(phraseCounts).map(([k,v]) => ({ Word: k, Count: v })).sort((a,b) => b.Count - a.Count);
+            exportToExcel(data, 'Smart_Text_Analysis');
+        }
+
+        function exportChronicData() {
+            const tech = currentFilteredData.filter(d => d.category === 'Tech' && d.pDate);
+            const groups = {};
+            tech.forEach(d => {
+                const key = `${d.ACREG}|${d.ataCode}`;
+                if(!groups[key]) groups[key] = { ...d, count: 0 };
+                groups[key].count++;
+            });
+            const data = Object.values(groups).filter(i => i.count > 1).map(c => ({
+                ACREG: c.ACREG, ATA: c.ataLabel, Occurrences: c.count,
+                Last_Date: c['Complaint Date'], Last_Status: c.Maintenance_Status, Latest_Complaint: c.cleanComp
+            })).sort((a,b) => b.Occurrences - a.Occurrences);
+            exportToExcel(data, 'Chronic_Alert_Data');
+        }
+
+        function exportMatrixData() {
+             const data = currentFilteredData.filter(d => d.category === 'Tech').map(d => ({
+                 Aircraft: d.ACREG, ATA: d.ataLabel, Date: d['Complaint Date'], Defect: d.cleanComp
+             }));
+             exportToExcel(data, 'Matrix_Heatmap_Source');
+        }
+
+        function exportRawData() { exportToExcel(currentFilteredData, 'Full_Raw_Data'); }
+
+        // --- NEW EXPORT FUNCTIONS FOR ECHARTS ---
+        function exportRiskMatrix() {
+            if (!heatmapDataExport || heatmapDataExport.length === 0) { alert("No Risk Matrix data to export!"); return; }
+            exportToExcel(heatmapDataExport, 'Flight_Phase_Risk_Matrix');
+        }
+
+        function exportResolutionFlow() {
+            if (!sankeyDataExport || sankeyDataExport.length === 0) { alert("No Flow data to export!"); return; }
+            exportToExcel(sankeyDataExport, 'Defect_Resolution_Flow');
+        }
+
+        // --- 6. PARSING & HELPERS ---
+        function parseATA(rawStr) {
+            if (!rawStr) return { code: "Unknown", label: "Unknown" };
+            const parts = rawStr.split('-');
+            let code = rawStr.trim();
+            if (parts.length > 1) { const possibleATA = parts[1].trim(); if (possibleATA.length > 0) code = possibleATA; }
+            const desc = ataDescriptions[code] || "Unknown";
+            const label = desc !== "Unknown" ? `${code} - ${desc}` : rawStr;
+            return { code, label };
+        }
+
+        function formatDate(d) {
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = String(d.getFullYear()).slice(-2);
+            return `${day}-${month}-${year}`;
+        }
+
+        function parseDate(str) {
+            if(!str) return null;
+            try {
+                let cleanStr = str.trim().split(' ')[0];
+                cleanStr = cleanStr.replace(/-/g, '/').replace(/\./g, '/');
+                const parts = cleanStr.split('/');
+                let d;
+                if (parts.length === 3) {
+                    let day = parseInt(parts[0], 10);
+                    let month = parseInt(parts[1], 10) - 1; 
+                    let year = parseInt(parts[2], 10);
+                    if (year < 100) year += 2000;
+                    d = new Date(year, month, day);
+                } else {
+                    d = new Date(str); 
+                }
+                return (d instanceof Date && !isNaN(d.getTime())) ? d : null;
+            } catch(e) { return null; }
+        }
+
+        function cleanText(txt) { return (txt || "").replace(/(Name\s*:|Auth no\s*:|Created by\s*:|\-{3,}).*/gi, "").trim(); }
+        
+        function categorize(row) {
+            const act = (row['Activity Code Text']||"").toUpperCase();
+            const comp = (row['Complaint Text']||"").toUpperCase();
+            const infoKeys = ['AUTOLAND', 'JAMMING', 'NOTED', 'FLIGHT HOURS'];
+            if(act.includes('INFORMATION') || infoKeys.some(k => comp.includes(k))) return 'Info';
+            return 'Tech';
+        }
+
+        // --- 7. RENDER CHARTS ---
+        function renderKPIs(data) {
+            const tech = data.filter(d => d.category === 'Tech');
+            const ataCounts = {};
+            tech.forEach(d => { if(d.ataLabel !== "Unknown") ataCounts[d.ataLabel] = (ataCounts[d.ataLabel]||0)+1; });
+            const topAta = Object.keys(ataCounts).length ? Object.entries(ataCounts).sort((a,b)=>b[1]-a[1])[0][0] : "-";
+            const acCounts = {};
+            tech.forEach(d => { if(d.ACREG) acCounts[d.ACREG] = (acCounts[d.ACREG]||0)+1; });
+            const sickAc = Object.keys(acCounts).length ? Object.entries(acCounts).sort((a,b)=>b[1]-a[1])[0][0] : "-";
+            const validDates = data.filter(d => d.pDate);
+            let avgDay = 0;
+            if (validDates.length > 1) {
+                const days = (validDates[validDates.length-1].pDate - validDates[0].pDate) / (1000*3600*24) || 1;
+                avgDay = (validDates.length / days).toFixed(1);
+            }
+            document.getElementById('kpi-total').innerText = data.length.toLocaleString();
+            document.getElementById('kpi-tech').innerText = tech.length.toLocaleString();
+            document.getElementById('kpi-top-ata').innerText = topAta; 
+            document.getElementById('kpi-sickest-ac').innerText = sickAc;
+            document.getElementById('kpi-avg-day').innerText = avgDay;
+        }
+
+        function setTrendFreq(freq) {
+            currentTrendFreq = freq;
+            document.querySelectorAll('.trend-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`freq-${freq.toLowerCase()}`).classList.add('active');
+            renderTrend(currentFilteredData);
+        }
+
+        function renderTrend(data) {
+            const validData = data.filter(d => d.pDate && d.category === 'Tech');
+            const modelGroups = {};
+            const allTimePoints = new Set();
+            
+            validData.forEach(d => {
+                let timeKey;
+                // --- Grouping Logic ---
+                if (currentTrendFreq === 'Day') {
+                    // YYYY-MM-DD (Local)
+                    const y = d.pDate.getFullYear();
+                    const m = String(d.pDate.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.pDate.getDate()).padStart(2, '0');
+                    timeKey = `${y}-${m}-${day}`;
+                } else if (currentTrendFreq === 'Week') {
+                    // ISO Week YYYY-Www
+                    const date = new Date(d.pDate.getTime());
+                    date.setHours(0, 0, 0, 0);
+                    // Thursday in current week decides the year.
+                    date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+                    const week1 = new Date(date.getFullYear(), 0, 4);
+                    const weekNum = 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+                    timeKey = `${date.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+                } else {
+                    // Month YYYY-MM (Local)
+                    const y = d.pDate.getFullYear();
+                    const m = String(d.pDate.getMonth() + 1).padStart(2, '0');
+                    timeKey = `${y}-${m}`;
+                }
+
+                const model = d.acModel || "Unknown";
+                allTimePoints.add(timeKey);
+                
+                if (!modelGroups[model]) modelGroups[model] = {};
+                modelGroups[model][timeKey] = (modelGroups[model][timeKey] || 0) + 1;
+            });
+
+            const sortedTimePoints = Array.from(allTimePoints).sort();
+            
+            const traces = [];
+            Object.keys(modelGroups).forEach(model => {
+                const yValues = sortedTimePoints.map(t => modelGroups[model][t] || 0);
+                traces.push({
+                    x: sortedTimePoints, 
+                    y: yValues, 
+                    type: 'scatter', 
+                    mode: 'lines+markers', 
+                    name: model, 
+                    line: { shape: 'spline', width: 2 }, 
+                    marker: { size: 6 }, 
+                    connectgaps: true 
+                });
+            });
+
+            if (traces.length === 0) traces.push({ x: [], y: [], type: 'scatter', name: 'No Data' });
+            
+            // Layout config based on frequency
+            let xaxisConfig = { type: 'category' }; // Default category for Week
+            if (currentTrendFreq === 'Day') xaxisConfig = { type: 'date', tickformat: '%d %b' };
+            if (currentTrendFreq === 'Month') xaxisConfig = { type: 'date', tickformat: '%b %Y', dtick: 'M1' };
+
+            const trendEl = document.getElementById('trend-chart');
+            Plotly.newPlot('trend-chart', traces, { 
+                margin: {t:30,l:40,r:10,b:40}, 
+                autosize: true, 
+                hovermode: 'x unified', 
+                legend: { orientation: 'h', y: -0.2 },
+                xaxis: xaxisConfig
+            }, {responsive: true});
+
+            trendEl.removeAllListeners('plotly_click');
+            trendEl.on('plotly_click', function(clickData){
+                const point = clickData.points[0];
+                const xVal = point.x; 
+                const modelName = point.data.name; 
+                
+                // Filtering Logic matching the grouping
+                const subset = currentFilteredData.filter(d => {
+                     if (!d.pDate) return false;
+                     let dKey;
+                     const y = d.pDate.getFullYear();
+                     const m = String(d.pDate.getMonth() + 1).padStart(2, '0');
+                     const day = String(d.pDate.getDate()).padStart(2, '0');
+
+                     if (currentTrendFreq === 'Day') {
+                         dKey = `${y}-${m}-${day}`;
+                         // Plotly might return full date string for date axis, slice it
+                         return xVal.startsWith(dKey) && (modelName !== 'No Data' ? d.acModel === modelName : true);
+                     } else if (currentTrendFreq === 'Month') {
+                         dKey = `${y}-${m}`;
+                         return xVal.startsWith(dKey) && (modelName !== 'No Data' ? d.acModel === modelName : true);
+                     } else {
+                         // Week logic match is complex without library, simplified check:
+                         // Just show all for model if complex
+                         return (modelName !== 'No Data' ? d.acModel === modelName : true);
+                     }
+                });
+                
+                drilldownView(subset, `${currentTrendFreq}: ${xVal}, Model: ${modelName}`);
+            });
+        }
+        
+        // --- DECOUPLED CHART RENDERERS (V11.27 FIX) ---
+        
+        function renderCategoryChart(data) {
+            // Issue Category Donut
+            const cats = { 
+                'Tech': data.filter(d => d.category === 'Tech').length, 
+                'Info': data.filter(d => d.category === 'Info').length 
+            };
+            
+            // Check if empty
+            if (cats['Tech'] === 0 && cats['Info'] === 0) {
+                 Plotly.newPlot('cat-chart', [], { title: { text: 'No Data', font: { size: 14, color: '#9CA3AF' } } });
+                 return;
+            }
+
+            const catEl = document.getElementById('cat-chart');
+            Plotly.newPlot('cat-chart', [{ 
+                labels: Object.keys(cats), 
+                values: Object.values(cats), 
+                type: 'pie', 
+                marker: {colors: ['#DC2626', '#10B981']}, 
+                hole: 0.4 
+            }], { 
+                margin: {t:0,l:0,r:0,b:0} 
+            }, {responsive: true});
+            
+            catEl.removeAllListeners('plotly_click');
+            catEl.on('plotly_click', function(clickData){
+                const label = clickData.points[0].label;
+                drilldownView(currentFilteredData.filter(d => d.category === (label === 'Tech' ? 'Tech' : 'Info')), `Category: ${label}`);
+            });
+        }
+
+        function renderStatusChart(data) {
+            // Maintenance Status Donut
+            const statusCounts = {};
+            data.forEach(d => { 
+                if(d.Maintenance_Status) {
+                    statusCounts[d.Maintenance_Status] = (statusCounts[d.Maintenance_Status]||0)+1; 
+                }
+            });
+            
+            // Check if empty
+            if (Object.keys(statusCounts).length === 0) {
+                 Plotly.newPlot('status-chart', [], { title: { text: 'No Data', font: { size: 14, color: '#9CA3AF' } } });
+                 return;
+            }
+
+            const statusEl = document.getElementById('status-chart');
+            // Colors: Fix=Red, Defer=Yellow, Inspect=Blue, Info=Green, Other=Gray
+            const statusColors = { 'Fix': '#EF4444', 'Defer': '#F59E0B', 'Inspect': '#3B82F6', 'Info': '#10B981', 'Other': '#9CA3AF' };
+            const sLabels = Object.keys(statusCounts);
+            const sValues = Object.values(statusCounts);
+            const sColors = sLabels.map(l => statusColors[l] || '#CBD5E1');
+
+            Plotly.newPlot('status-chart', [{ 
+                labels: sLabels, 
+                values: sValues, 
+                type: 'pie', 
+                marker: {colors: sColors}, 
+                hole: 0.4, 
+                textinfo: 'label+percent' 
+            }], { 
+                margin: {t:0,l:0,r:0,b:0}, 
+                showlegend: true, 
+                legend: {orientation: 'h', y: -0.1} 
+            }, {responsive: true});
+            
+            statusEl.removeAllListeners('plotly_click');
+            statusEl.on('plotly_click', function(clickData){
+                const label = clickData.points[0].label;
+                drilldownView(currentFilteredData.filter(d => d.Maintenance_Status === label), `Status: ${label}`);
+            });
+        }
+
+        function renderTop5Cards(data) {
+            const tech = data.filter(d => d.category === 'Tech');
+            
+            // 1. Top 5 Aircraft
+            const acCounts = {};
+            tech.forEach(d => { if(d.ACREG) acCounts[d.ACREG] = (acCounts[d.ACREG]||0)+1; });
+            const top5AC = Object.entries(acCounts).sort((a,b)=>b[1]-a[1]).slice(0, 5);
+            
+            const acListHtml = top5AC.map((item, idx) => `
+                <div class="flex justify-between items-center text-sm p-1 border-b border-gray-100 last:border-0">
+                    <span class="font-semibold text-gray-700 w-6">${idx+1}.</span>
+                    <span class="text-blue-600 flex-1">${item[0]}</span>
+                    <span class="font-bold text-gray-800 bg-gray-100 px-2 rounded-full text-xs">${item[1]}</span>
+                </div>
+            `).join('');
+            document.getElementById('top5-ac-list').innerHTML = acListHtml || '<div class="text-xs text-gray-400 text-center py-4">No Data</div>';
+
+            // 2. Top 5 ATA
+            const ataCounts = {};
+            tech.forEach(d => { if(d.ataLabel && d.ataLabel !== 'Unknown') ataCounts[d.ataLabel] = (ataCounts[d.ataLabel]||0)+1; });
+            const top5ATA = Object.entries(ataCounts).sort((a,b)=>b[1]-a[1]).slice(0, 5);
+
+            const ataListHtml = top5ATA.map((item, idx) => `
+                <div class="flex justify-between items-center text-sm p-1 border-b border-gray-100 last:border-0">
+                    <span class="font-semibold text-gray-700 w-6">${idx+1}.</span>
+                    <span class="text-gray-600 flex-1 truncate" title="${item[0]}">${item[0]}</span>
+                    <span class="font-bold text-gray-800 bg-gray-100 px-2 rounded-full text-xs">${item[1]}</span>
+                </div>
+            `).join('');
+            document.getElementById('top5-ata-list').innerHTML = ataListHtml || '<div class="text-xs text-gray-400 text-center py-4">No Data</div>';
+        }
+
+        // --- END DECOUPLED CHARTS ---
+
+        function renderMatrix(data) {
+            const tech = data.filter(d => d.category === 'Tech');
+            const acCounts = {};
+            const ataCounts = {};
+            const matrixCounts = {};
+            tech.forEach(d => {
+                if(d.ACREG) acCounts[d.ACREG] = (acCounts[d.ACREG]||0)+1;
+                if(d.ataLabel) ataCounts[d.ataLabel] = (ataCounts[d.ataLabel]||0)+1;
+                const key = `${d.ACREG}|${d.ataLabel}`;
+                matrixCounts[key] = (matrixCounts[key]||0)+1;
+            });
+            const topAC = Object.entries(acCounts).sort((a,b)=>b[1]-a[1]).slice(0, 20).map(x=>x[0]);
+            const topATA = Object.entries(ataCounts).sort((a,b)=>b[1]-a[1]).slice(0, 20).map(x=>x[0]);
+            const zValues = [];
+            topAC.forEach(ac => {
+                const row = [];
+                topATA.forEach(ata => { row.push(matrixCounts[`${ac}|${ata}`] || 0); });
+                zValues.push(row);
+            });
+            const matrixEl = document.getElementById('matrix-chart');
+            const xLabels = topATA.map(ata => {
+                const code = ata.split(' - ')[0];
+                return isNaN(code) ? ata : `ATA ${code}`;
+            });
+            const hoverTexts = topATA;
+
+            if(topAC.length === 0) { Plotly.newPlot('matrix-chart', [], { title: { text: 'No data', font: { size: 14, color: '#9CA3AF' } } }, {responsive: true}); return; }
+            
+            // Custom Colorscale: 0=White, High=Red
+            const customColorscale = [
+                [0, '#FFFFFF'],      // 0: White
+                [0.000001, '#FEF9C3'], // >0: Light Yellow
+                [0.35, '#FACC15'],   // Medium: Yellow
+                [0.7, '#EF4444'],    // High: Red
+                [1, '#7F1D1D']       // Max: Dark Red
+            ];
+
+            const textValues = zValues.map(row => row.map(v => v > 0 ? v : ""));
+
+            Plotly.newPlot('matrix-chart', [{ 
+                z: zValues, x: xLabels, y: topAC, type: 'heatmap', colorscale: customColorscale, showscale: true,
+                ygap: 1, xgap: 1,
+                text: textValues, // Values for display
+                texttemplate: "%{text}", // Show value
+                hovertext: zValues.map(row => row.map((val, i) => `ATA: ${hoverTexts[i]}<br>Count: ${val}`)),
+                hovertemplate: 'Aircraft: %{y}<br>%{hovertext}<extra></extra>'
+            }], { margin: {t:30, l:100, r:30, b:100}, xaxis: { tickangle: -45, title: 'ATA System' }, yaxis: { title: 'Aircraft' } }, {responsive: true});
+            
+            matrixEl.removeAllListeners('plotly_click');
+            matrixEl.on('plotly_click', function(clickData){
+                const xVal = clickData.points[0].x;
+                const ac = clickData.points[0].y;
+                if(xVal.startsWith('ATA ')) {
+                    const code = xVal.split(' ')[1];
+                    drilldownView(currentFilteredData.filter(d => d.ACREG === ac && d.ataCode === code && d.category === 'Tech'), `Aircraft: ${ac}, ATA: ${xVal}`);
+                } else {
+                    drilldownView(currentFilteredData.filter(d => d.ACREG === ac && d.ataLabel === xVal && d.category === 'Tech'), `Aircraft: ${ac}, ATA: ${xVal}`);
+                }
+            });
+        }
+
+        function renderSunburst(data) {
+            const tech = data.filter(d => d.category === 'Tech');
+            const labels = [], parents = [], values = [], ids = [];
+            labels.push("Fleet"); parents.push(""); ids.push("Fleet"); values.push(0); 
+            const typeMap = {}, modelMap = {}, ataMap = {};
+            tech.forEach(d => {
+                const t = d.acType || "Unknown", m = d.acModel || "Unknown", a = d.ataCode || "Unknown";
+                if(!typeMap[t]) typeMap[t] = 0; typeMap[t]++;
+                const mKey = `${t}|${m}`; if(!modelMap[mKey]) modelMap[mKey] = 0; modelMap[mKey]++;
+                const aKey = `${t}|${m}|${a}`; if(!ataMap[aKey]) ataMap[aKey] = 0; ataMap[aKey]++;
+            });
+            Object.keys(typeMap).forEach(t => { labels.push(t); parents.push("Fleet"); ids.push(t); values.push(typeMap[t]); });
+            Object.keys(modelMap).forEach(key => { const [t, m] = key.split('|'); labels.push(m); parents.push(t); ids.push(key); values.push(modelMap[key]); });
+            Object.keys(ataMap).forEach(key => { const [t, m, a] = key.split('|'); labels.push(a); parents.push(`${t}|${m}`); ids.push(key); values.push(ataMap[key]); });
+            values[0] = tech.length;
+            const sunburstEl = document.getElementById('sunburst-chart');
+            Plotly.newPlot('sunburst-chart', [{ type: "sunburst", ids: ids, labels: labels, parents: parents, values: values, textinfo: "label+value", branchvalues: "total", marker: {line: {width: 2}} }], { margin: {l:0, r:0, b:0, t:0} }, {responsive: true});
+            
+            sunburstEl.removeAllListeners('plotly_click');
+            sunburstEl.on('plotly_click', function(clickData) {
+                const id = clickData.points[0].id;
+                if (id === "Fleet") return;
+                const parts = id.split('|');
+                if (parts.length === 3) {
+                    const [t, m, a] = parts;
+                    const subset = data.filter(d => d.acType === t && d.acModel === m && d.ataCode === a && d.category === 'Tech');
+                    drilldownView(subset, `Type: ${t}, Model: ${m}, ATA: ${a}`);
+                }
+            });
+        }
+
+        function setFleetLimit(limit) {
+            currentFleetLimit = limit;
+            renderFleetHealth(currentFilteredData);
+            const buttons = document.querySelectorAll('#fleet-chart').parentNode.querySelectorAll('button');
+            buttons.forEach(btn => {
+                if ((limit === 'ALL' && btn.innerText === 'All') || 
+                    (limit === 5 && btn.innerText === 'Top 5') || 
+                    (limit === 10 && btn.innerText === 'Top 10')) {
+                    btn.classList.add('bg-gray-100', 'font-bold');
+                } else {
+                    btn.classList.remove('bg-gray-100', 'font-bold');
+                }
+            });
+        }
+
+        function renderFleetHealth(data) {
+            const tech = data.filter(d => d.category === 'Tech');
+            const acCounts = {};
+            tech.forEach(d => { if(d.ACREG) acCounts[d.ACREG] = (acCounts[d.ACREG]||0)+1; });
+            let sortedAC = Object.entries(acCounts).sort((a,b) => b[1]-a[1]);
+            if (currentFleetLimit !== 'ALL') {
+                sortedAC = sortedAC.slice(0, currentFleetLimit);
+            }
+            const xLabels = sortedAC.map(x => x[0]);
+            const fleetEl = document.getElementById('fleet-chart');
+            Plotly.newPlot('fleet-chart', [{ x: xLabels, y: sortedAC.map(x=>x[1]), type: 'bar', marker: {color: '#9333EA'} }], { margin: {t:20,l:30,r:10,b:40} }, {responsive: true});
+            fleetEl.removeAllListeners('plotly_click');
+            fleetEl.on('plotly_click', function(clickData){ drilldownView(data.filter(d => d.ACREG === clickData.points[0].x && d.category === 'Tech'), `Aircraft: ${clickData.points[0].x}`); });
+            
+            renderSunburst(data);
+
+            const ataCounts = {};
+            tech.forEach(d => { if(d.ataLabel !== "Unknown") ataCounts[d.ataLabel] = (ataCounts[d.ataLabel]||0)+1; });
+            const sortedATA = Object.entries(ataCounts).sort((a,b) => b[1]-a[1]).slice(0, 20);
+            const xLabelsATA = sortedATA.map(x => {
+                 const code = x[0].split(' - ')[0];
+                 return isNaN(code) ? x[0] : `ATA ${code}`;
+            });
+            const hoverTextsATA = sortedATA.map(x => x[0]);
+
+            const total = sortedATA.reduce((sum, x) => sum + x[1], 0);
+            let cumSum = 0;
+            const cumPct = sortedATA.map(x => { cumSum += x[1]; return (cumSum/total)*100; });
+            const paretoEl = document.getElementById('pareto-chart');
+            
+            Plotly.newPlot('pareto-chart', [
+                { 
+                    x: xLabelsATA, 
+                    y: sortedATA.map(x=>x[1]), 
+                    type: 'bar', 
+                    name: 'Count', 
+                    marker: {color: '#F59E0B'},
+                    text: sortedATA.map(x=>x[1]), // Add text
+                    textposition: 'outside',      // Position outside
+                    hovertext: hoverTextsATA, 
+                    hovertemplate: '%{hovertext}<br>Count: %{y}<extra></extra>' 
+                },
+                { 
+                    x: xLabelsATA, 
+                    y: cumPct, 
+                    type: 'scatter', 
+                    mode: 'lines+markers', // Add markers
+                    name: 'Cum %', 
+                    yaxis: 'y2', 
+                    line: {color: '#374151', width: 2},
+                    marker: {size: 6, color: '#374151'}, // Style markers
+                    hovertext: hoverTextsATA, 
+                    hovertemplate: '%{hovertext}<br>Cum %: %{y:.2f}%<extra></extra>' 
+                }
+            ], { 
+                margin: {t:30,l:40,r:40,b:80}, // Adjust margins for text labels
+                yaxis2: {overlaying: 'y', side: 'right', range: [0, 110], showgrid: false}, // Adjust range for labels
+                yaxis: {showgrid: false},
+                showlegend: false 
+            }, {responsive: true});
+
+            paretoEl.removeAllListeners('plotly_click');
+            paretoEl.on('plotly_click', function(clickData){ 
+                const fullLabel = clickData.points[0].hovertext;
+                drilldownView(data.filter(d => d.ataLabel === fullLabel), `ATA: ${fullLabel}`); 
+            });
+        }
+
+        function renderFaultCodes(data) {
+            const counts = {};
+            data.filter(d => d.category==='Tech' && d.ataLabel!=='Unknown').forEach(d => counts[d.ataLabel]=(counts[d.ataLabel]||0)+1);
+            const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,15);
+            const yLabels = sorted.map(x => {
+                 const code = x[0].split(' - ')[0];
+                 return isNaN(code) ? x[0] : `ATA ${code}`;
+            });
+            const hoverTexts = sorted.map(x => x[0]);
+            const fcEl = document.getElementById('fc-chart');
+            Plotly.newPlot('fc-chart', [{ 
+                y: yLabels, x: sorted.map(x=>x[1]), type: 'bar', orientation: 'h', marker: {color: '#EF4444'},
+                hovertext: hoverTexts, hovertemplate: '%{hovertext}<br>Count: %{x}<extra></extra>'
+            }], { 
+                margin: {t:0, l:140, r:10, b:30}, // Increased left margin
+                yaxis: {
+                    autorange:'reversed', 
+                    title: { text: 'ATA Chapter', standoff: 20 } // Added spacing
+                } 
+            }, {responsive: true});
+            fcEl.removeAllListeners('plotly_click');
+            fcEl.on('plotly_click', function(clickData){ 
+                const fullLabel = clickData.points[0].hovertext;
+                drilldownView(data.filter(d => d.ataLabel === fullLabel), `ATA: ${fullLabel}`); 
+            });
+
+            // Populate Side List (Added in V11.10)
+            const listEl = document.getElementById('fc-list');
+            if (listEl) {
+                listEl.innerHTML = sorted.map(([label, count]) => {
+                    const safeLabel = label.replace(/'/g, "\\'");
+                    return `
+                        <div class="flex justify-between items-center py-2 border-b border-gray-100 hover:bg-red-50 cursor-pointer transition" 
+                             onclick="drilldownView(currentFilteredData.filter(d => d.ataLabel === '${safeLabel}'), 'ATA: ${safeLabel}')">
+                            <span class="text-xs text-gray-600 truncate w-3/4" title="${label}">${label}</span>
+                            <span class="text-xs font-bold text-gray-800">${count}</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        function runNgramAnalysis(data) {
+             // Store data for later use in ECharts rendering
+             phraseDataStore = data;
+             
+             const col = document.getElementById('ngram-col').value;
+             const stopWords = new Set(["THE","AND","TO","OF","IN","IS","FOR","WITH","ON","AT","FROM","BY","NAME","AUTH","NO","DATE","TIME","REF","AMM","TASK","REV","ACTION","CHECKED","NOTED","FOUND","HAS", "WAS", "MSG"]);
+            const phraseCounts = {};
+            data.forEach(row => {
+                let txt = row[col]; if(!txt) return;
+                txt = txt.replace(/(Name\s*:|Auth no\s*:|Created by\s*:|\-{3,}).*/gi, "");
+                const words = txt.replace(/[^a-zA-Z0-9\/\-\s]/g, ' ').toUpperCase().split(/\s+/).filter(w => w.length>2 && !stopWords.has(w) && isNaN(w));
+                const rowBigrams = new Set();
+                if(col.includes('Complaint')) { words.forEach(w => rowBigrams.add(w)); } else { words.forEach(w => rowBigrams.add(w)); }
+                rowBigrams.forEach(bg => { phraseCounts[bg] = (phraseCounts[bg]||0)+1; });
+            });
+            const sorted = Object.entries(phraseCounts).sort((a,b)=>b[1]-a[1]).slice(0, 20);
+            const ngramEl = document.getElementById('ngram-chart');
+            if(sorted.length === 0) { Plotly.newPlot('ngram-chart', [], { title: { text: 'No data found', font: { size: 14, color: '#9CA3AF' } } }, {responsive: true}); return; }
+            Plotly.newPlot('ngram-chart', [{ x: sorted.map(x=>x[0]), y: sorted.map(x=>x[1]), type: 'bar', marker: {color: '#0EA5E9'} }], { margin: {t:20,l:30,r:10,b:100}, xaxis: {tickangle: -45} }, {responsive: true});
+            
+            // FIX: Remove old listeners first to prevent duplicates
+            ngramEl.removeAllListeners('plotly_click');
+            // FIX: Use currentFilteredData in closure to prevent ReferenceError if 'data' is stale
+            ngramEl.on('plotly_click', function(clickData){
+                const phrase = clickData.points[0].x;
+                // Use currentFilteredData global for robustness
+                drilldownView(currentFilteredData.filter(d => (d[col]||"").toUpperCase().includes(phrase)), `Phrase: "${phrase}"`);
+            });
+            
+            // Call ECharts Rendering ONLY if the tab is visible to prevent canvas errors
+            const phraseTab = document.getElementById('tab-phrase');
+            if (phraseTab && !phraseTab.classList.contains('hidden')) {
+                 renderEChartsAdvanced(data); 
+            }
+        }
+        
+        // --- 9. ECHARTS ADVANCED RENDERING ---
+        function renderEChartsAdvanced(data) {
+            if (!data || data.length === 0) return;
+            
+            // Safely dispose old instances to prevent conflicts
+            const ids = ['echart-heatmap', 'echart-sankey'];
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    const existing = echarts.getInstanceByDom(el);
+                    if (existing) existing.dispose();
+                }
+            });
+
+            const techData = data.filter(d => d.category === 'Tech');
+            const compCol = document.getElementById('ngram-col').value; // Usually 'Complaint Text'
+
+            // --- 1. Risk Matrix (Phase vs Symptom) ---
+            const phases = ['PARK', 'TAXI', 'TAKEOFF', 'CLIMB', 'CRUISE', 'DESCENT', 'LANDING'];
+            const symptomCounts = {};
+            const matrixData = {}; // key: "PHASE|SYMPTOM" -> count
+
+            techData.forEach(d => {
+                const txt = (d[compCol] || "").toUpperCase();
+                let phase = "UNKNOWN";
+                // Detect Phase
+                for (const [p, keywords] of Object.entries(flightPhases)) {
+                    if (keywords.some(k => txt.includes(k))) { phase = p; break; }
+                }
+                if (phase === "UNKNOWN") return; // Skip unknown phases for matrix
+
+                // Detect Symptom (First match)
+                let symptom = null;
+                for (const s of wordCategories.Symptom) {
+                    if (new RegExp(`\\b${s}\\b`).test(txt)) { symptom = s; break; }
+                }
+                if (!symptom) return;
+
+                symptomCounts[symptom] = (symptomCounts[symptom] || 0) + 1;
+                const key = `${phase}|${symptom}`;
+                matrixData[key] = (matrixData[key] || 0) + 1;
+            });
+
+            // Top 10 Symptoms
+            const topSymptoms = Object.entries(symptomCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10)
+                .map(x => x[0]);
+
+            const heatmapData = [];
+            // Prepare Export Data
+            heatmapDataExport = [];
+
+            phases.forEach((p, i) => {
+                topSymptoms.forEach((s, j) => {
+                    const count = matrixData[`${p}|${s}`] || 0;
+                    heatmapData.push([i, j, count]);
+                    if(count > 0) heatmapDataExport.push({ Phase: p, Symptom: s, Count: count });
+                });
+            });
+
+            const heatmapChart = echarts.init(document.getElementById('echart-heatmap'));
+            heatmapChart.setOption({
+                tooltip: { position: 'top' },
+                grid: { height: '70%', top: '10%' },
+                xAxis: { type: 'category', data: phases, splitArea: { show: true } },
+                yAxis: { type: 'category', data: topSymptoms, splitArea: { show: true } },
+                visualMap: { min: 0, max: Math.max(...heatmapData.map(d=>d[2])) || 10, calculable: true, orient: 'horizontal', left: 'center', bottom: '0%', inRange: { color: ['#fff', '#fde047', '#ef4444'] } },
+                series: [{
+                    name: 'Risk Count', type: 'heatmap', data: heatmapData,
+                    label: { show: true },
+                    emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0, 0, 0, 0.5)' } }
+                }]
+            });
+            
+            // HEATMAP CLICK EVENT
+            heatmapChart.on('click', function(params) {
+                const phase = phases[params.data[0]];
+                const symptom = topSymptoms[params.data[1]];
+                
+                // Use currentFilteredData for robust filtering
+                const subset = currentFilteredData.filter(d => {
+                    const txt = (d[compCol] || "").toUpperCase();
+                    // Re-use logic: Contains Phase keywords AND Regex Match Symptom
+                    const hasPhase = flightPhases[phase].some(k => txt.includes(k));
+                    const hasSymptom = new RegExp(`\\b${symptom}\\b`).test(txt);
+                    return hasPhase && hasSymptom && d.category === 'Tech'; // Ensure tech category match
+                });
+                drilldownView(subset, `Risk: ${phase} + ${symptom}`);
+            });
+
+            // --- 2. Sankey Flow (Symptom -> Component -> Action) ---
+            const nodes = new Set();
+            const links = [];
+            const flowCounts = {}; // Key: "Sym|Comp|Act"
+            sankeyDataExport = []; // Clear old export
+
+            techData.forEach(d => {
+                const txt = (d['Complaint Text'] || "").toUpperCase();
+                const actTxt = (d['Activity Code Text'] || "").toUpperCase(); // Scan Action from Activity Code
+
+                // 1. Symptom
+                let sym = null;
+                for (const s of wordCategories.Symptom) { if (new RegExp(`\\b${s}\\b`).test(txt)) { sym = s; break; } }
+                
+                // 2. Component
+                let comp = null;
+                for (const c of wordCategories.Component) { if (new RegExp(`\\b${c}\\b`).test(txt)) { comp = c; break; } }
+
+                // 3. Action
+                let action = null;
+                for (const a of actionKeywords) { if (actTxt.includes(a)) { action = a; break; } }
+                if(!action) action = d.Maintenance_Status || "OTHER"; // Fallback
+
+                if (sym && comp && action) {
+                    const key = `${sym}|${comp}|${action}`;
+                    flowCounts[key] = (flowCounts[key] || 0) + 1;
+                }
+            });
+
+            // Filter Top Flows (e.g., > 1 occurrence or Top 20)
+            const sortedFlows = Object.entries(flowCounts).sort((a, b) => b[1] - a[1]).slice(0, 20);
+            
+            sortedFlows.forEach(([key, val]) => {
+                const [s, c, a] = key.split('|');
+                // Export Data
+                sankeyDataExport.push({ Symptom: s, Component: c, Action: a, Count: val });
+
+                // Unique Names for Levels to avoid cycle (e.g., "Reset" as symptom and action)
+                const n1 = `Sym: ${s}`, n2 = `Part: ${c}`, n3 = `Act: ${a}`;
+                nodes.add(n1); nodes.add(n2); nodes.add(n3);
+                links.push({ source: n1, target: n2, value: val });
+                links.push({ source: n2, target: n3, value: val });
+            });
+
+            const sankeyChart = echarts.init(document.getElementById('echart-sankey'));
+            sankeyChart.setOption({
+                tooltip: { trigger: 'item', triggerOn: 'mousemove' },
+                series: [{
+                    type: 'sankey', layout: 'none',
+                    emphasis: { focus: 'adjacency' },
+                    data: Array.from(nodes).map(n => ({ name: n })),
+                    links: links,
+                    lineStyle: { color: 'source', curveness: 0.5 }
+                }]
+            });
+            
+            // SANKEY CLICK EVENT
+            sankeyChart.on('click', function(params) {
+                // Use currentFilteredData for robust filtering
+                const filterData = currentFilteredData.filter(d => d.category === 'Tech');
+                
+                if (params.dataType === 'node') {
+                    // Node Click: Filter by contained string (strip prefix "Sym: ", "Part: ")
+                    const name = params.name; 
+                    const keyword = name.split(': ')[1]; // "Sym: LEAK" -> "LEAK"
+                    const subset = filterData.filter(d => {
+                        const txt = (d['Complaint Text'] || "").toUpperCase();
+                        const actTxt = (d['Activity Code Text'] || "").toUpperCase();
+                        return new RegExp(`\\b${keyword}\\b`).test(txt) || actTxt.includes(keyword) || d.Maintenance_Status === keyword;
+                    });
+                    drilldownView(subset, `Flow Node: ${keyword}`);
+                } else if (params.dataType === 'edge') {
+                    // Link Click: Filter by Source AND Target
+                    const src = params.data.source.split(': ')[1];
+                    const tgt = params.data.target.split(': ')[1];
+                     const subset = filterData.filter(d => {
+                        const txt = (d['Complaint Text'] || "").toUpperCase();
+                        const actTxt = (d['Activity Code Text'] || "").toUpperCase();
+                        
+                        // Check if row contains BOTH terms (either in complaint or action)
+                        const hasSrc = new RegExp(`\\b${src}\\b`).test(txt) || actTxt.includes(src);
+                        const hasTgt = new RegExp(`\\b${tgt}\\b`).test(txt) || actTxt.includes(tgt) || d.Maintenance_Status === tgt;
+                        
+                        return hasSrc && hasTgt;
+                    });
+                    drilldownView(subset, `Flow Link: ${src} -> ${tgt}`);
+                }
+            });
+            
+            // Resize handler integration
+            window.addEventListener('resize', function() {
+                heatmapChart.resize();
+                sankeyChart.resize();
+            });
+        }
+        
+        function drillChronic(reg, ataCode) {
+            const subset = currentFilteredData.filter(d => d.ACREG === reg && d.ataCode === ataCode);
+            drilldownView(subset, `Chronic: ${reg} - ATA ${ataCode}`);
+        }
+
+        function renderChronic(data) {
+            const tech = data.filter(d => d.category === 'Tech' && d.pDate);
+            const groups = {};
+            tech.forEach(d => {
+                const key = `${d.ACREG}|${d.ataCode}`;
+                if(!groups[key]) { groups[key] = { ...d, count: 1 }; } else { groups[key].count++; } // Logic Rule: Incremental Count
+            });
+            
+            const chronicList = Object.values(groups).filter(item => item.count > 1); // Logic Rule: > 1 occurrence
+
+            const html = chronicList.sort((a,b)=>b.count-a.count).map(c => `
+                <tr class="bg-white border-b hover:bg-red-50 cursor-pointer" onclick="highlightRow(this)">
+                    <td class="px-4 py-3 font-bold text-gray-800">${c.ACREG}</td>
+                    <td class="px-4 py-3">${c.ataLabel}</td>
+                    <td class="px-4 py-3 font-bold text-red-600">
+                        <span class="drill-link" onclick="event.stopPropagation(); drillChronic('${c.ACREG}', '${c.ataCode}')">${c.count}</span>
+                    </td>
+                    <td class="px-4 py-3 text-sm">${c['Complaint Date']}</td>
+                    <td class="px-4 py-3">${getStatusBadge(c.Maintenance_Status)}</td>
+                    <td class="px-4 py-3 text-xs text-gray-500 truncate max-w-xs">${c.cleanComp}</td>
+                </tr>
+            `).join('');
+            document.getElementById('chronic-body').innerHTML = html || '<tr><td colspan="6" class="p-4 text-center text-gray-400">No recurring defects found in this selection.</td></tr>';
+        }
+
+        function renderProblemStatement(data) {
+            const techData = data.filter(d => d.category === 'Tech');
+            if(techData.length === 0) { document.getElementById('statement-content').innerHTML = "No technical data available."; return; }
+            const grouping = {};
+            techData.forEach(d => {
+                if(d.ataCode && d.ataCode !== "Unknown") {
+                    const key = `${d.acModel}|${d.ataLabel}`;
+                    if(!grouping[key]) grouping[key] = {};
+                    if(!grouping[key][d.ACREG]) grouping[key][d.ACREG] = [];
+                    grouping[key][d.ACREG].push(d);
+                }
+            });
+            let html = "";
+            let hasChronic = false;
+            Object.keys(grouping).forEach(groupKey => {
+                const regsWithRepeats = [];
+                Object.keys(grouping[groupKey]).forEach(reg => {
+                    if(grouping[groupKey][reg].length > 1) regsWithRepeats.push(reg);
+                });
+
+                if(regsWithRepeats.length > 0) {
+                    hasChronic = true;
+                    const [model, ata] = groupKey.split('|');
+                    html += `<div class="mb-6 pb-4 border-b border-gray-300"><div class="font-bold text-blue-800 mb-2">${model} ATA ${ata}</div>`;
+                    const regList = regsWithRepeats.join(", ");
+                    html += `<div class="mb-4">Three-month rolling average of PIREPs rate per 1,000 flight hours exceeds the threshold. Chronic aircraft identified: ${regList}.</div>`;
+                    regsWithRepeats.forEach(reg => {
+                        const msgs = [...new Set(grouping[groupKey][reg].map(d => d.cleanComp))]; 
+                        const issueDesc = msgs.slice(0,2).join(" and ");
+                        const templates = [`Increasing pilot reports of ${issueDesc}.`, `Continued pilot reports of ${issueDesc}.`, `Rising number of pilot reports indicating ${issueDesc}.`];
+                        const sentence = templates[Math.floor(Math.random() * templates.length)];
+                        html += `<div class="mt-2 text-sm"><span class="font-semibold">Chronic aircraft:</span> ${reg}, ${sentence}</div>`;
+                    });
+                    html += `</div>`;
+                }
+            });
+            if(!hasChronic) html = "No chronic defects identified in the current selection (need >1 occurrence).";
+            document.getElementById('statement-content').innerHTML = html;
+        }
+
+        function copyStatement() {
+            navigator.clipboard.writeText(document.getElementById('statement-content').innerText).then(() => alert("Copied!"));
+        }
+
+        function initColumnSelector() {
+            if(!processedData.length) return;
+            const keys = Object.keys(processedData[0]);
+            const ignored = ['pDate', 'cleanComp', 'cleanOp', 'ataCode'];
+            allAvailableCols = keys.filter(k => !ignored.includes(k));
+            visibleColumns = new Set(allAvailableCols);
+            const container = document.getElementById('col-checkboxes');
+            container.innerHTML = '';
+            allAvailableCols.forEach(col => {
+                container.innerHTML += `<div class="flex items-center space-x-2"><input type="checkbox" id="col-${col}" value="${col}" checked class="rounded text-blue-600 focus:ring-blue-500 h-4 w-4" onchange="toggleColumn(this.value, this.checked)"><label for="col-${col}" class="text-xs text-gray-700 truncate cursor-pointer select-none">${col}</label></div>`;
+            });
+        }
+
+        function toggleColumn(colName, isChecked) {
+            if (isChecked) visibleColumns.add(colName); else visibleColumns.delete(colName);
+            renderRawTable(currentFilteredData);
+        }
+
+        function toggleColMenu() { document.getElementById('col-menu').classList.toggle('hidden'); }
+
+        function highlightRow(row) {
+            if(row.classList.contains('selected-row')) { row.classList.remove('selected-row'); } else { row.classList.add('selected-row'); }
+        }
+
+        // --- 8. TABLE RENDERER (PAGINATION + HIGHLIGHT + STICKY) ---
+        function renderRawTable(data, highlightTerm = null) {
+            currentRenderData = data;
+            if(!data || data.length === 0) { 
+                document.getElementById('raw-data-table').innerHTML = ''; 
+                document.getElementById('raw-count').innerText = '0 rows';
+                document.getElementById('page-info').innerText = '0 of 0';
+                return; 
+            }
+            
+            const totalRows = data.length;
+            const totalPages = Math.ceil(totalRows / rowsPerPage);
+            if (currentPage > totalPages) currentPage = 1;
+            
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = Math.min(startIndex + rowsPerPage, totalRows);
+            const displayData = data.slice(startIndex, endIndex);
+
+            let headers = allAvailableCols.filter(col => visibleColumns.has(col));
+            if (headers.length === 0) {
+                visibleColumns = new Set(allAvailableCols);
+                headers = allAvailableCols;
+                document.querySelectorAll('#col-checkboxes input').forEach(cb => cb.checked = true);
+            }
+            
+            let thead = `<thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 shadow-sm z-10"><tr>`;
+            headers.forEach(h => thead += `<th class="px-4 py-3 border-b bg-gray-100 font-bold tracking-wider">${h}</th>`);
+            thead += `</tr></thead><tbody>`;
+            
+            let tbody = "";
+            displayData.forEach((row) => {
+                tbody += `<tr class="bg-white border-b hover:bg-blue-50 transition-colors cursor-pointer" onclick="highlightRow(this)">`;
+                headers.forEach(h => {
+                    let val = row[h];
+                    if (val instanceof Date) val = formatDate(val);
+                    let displayVal = val ? String(val) : "";
+                    if (highlightTerm && displayVal) {
+                        const regex = new RegExp(`(${highlightTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                        displayVal = displayVal.replace(regex, '<span class="highlight-text">$1</span>');
+                    }
+                    
+                    // Logic for column specific wrapping
+                    const wrapCols = ['Activity Code Text', 'Activity Text', 'Operation Text', 'Component Text'];
+                    let cellClasses = "px-4 py-2 border-b border-gray-100 align-top";
+                    if (wrapCols.includes(h)) {
+                        cellClasses += " break-words max-w-[400px] min-w-[200px]"; // Added min-w to ensure readability
+                    } else {
+                        cellClasses += " whitespace-nowrap";
+                    }
+
+                    tbody += `<td class="${cellClasses}">${displayVal}</td>`;
+                });
+                tbody += `</tr>`;
+            });
+            
+            document.getElementById('raw-data-table').innerHTML = thead + tbody + `</tbody>`;
+            document.getElementById('raw-count').innerText = `${totalRows} rows total`;
+            document.getElementById('page-info').innerText = `Page ${currentPage} of ${totalPages} (Rows ${startIndex+1}-${endIndex})`;
+            document.getElementById('btn-prev').disabled = currentPage === 1;
+            document.getElementById('btn-next').disabled = currentPage === totalPages;
+        }
+        
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                const searchTerm = document.getElementById('table-search').value.toLowerCase();
+                renderRawTable(currentRenderData, searchTerm || null);
+            }
+        }
+        
+        function nextPage() {
+            const totalPages = Math.ceil(currentRenderData.length / rowsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                const searchTerm = document.getElementById('table-search').value.toLowerCase();
+                renderRawTable(currentRenderData, searchTerm || null);
+            }
+        }
+
+        function switchTab(id) {
+            document.querySelectorAll('.tab-content').forEach(d => d.classList.add('hidden'));
+            document.getElementById(`tab-${id}`).classList.remove('hidden');
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            const btn = document.getElementById(`nav-btn-${id}`);
+            if (btn) btn.classList.add('active');
+            document.querySelectorAll('tr.selected-row').forEach(row => row.classList.remove('selected-row'));
+            
+            setTimeout(() => {
+                const charts = ['trend-chart', 'cat-chart', 'status-chart', 'fleet-chart', 'pareto-chart', 'sunburst-chart', 'fc-chart', 'ngram-chart', 'matrix-chart', 'taxonomy-bar'];
+                charts.forEach(cId => {
+                     const el = document.getElementById(cId);
+                     if(el && el.offsetParent !== null) { Plotly.Plots.resize(el); }
+                });
+                // ECharts Resize
+                if(id === 'phrase') {
+                    // Lazy load ECharts if needed
+                    if (phraseDataStore && phraseDataStore.length > 0) {
+                         // Add a tiny delay to ensure container has dimensions
+                         setTimeout(() => {
+                             renderEChartsAdvanced(phraseDataStore);
+                         }, 50);
+                    }
+                    
+                    const echartsContainers = ['echart-heatmap', 'echart-sankey'];
+                    echartsContainers.forEach(eid => {
+                        const instance = echarts.getInstanceByDom(document.getElementById(eid));
+                        if(instance) instance.resize();
+                    });
+                }
+            }, 50);
+        }
+        
+        window.addEventListener('resize', function() {
+            const charts = ['trend-chart', 'cat-chart', 'status-chart', 'fleet-chart', 'pareto-chart', 'sunburst-chart', 'fc-chart', 'ngram-chart', 'matrix-chart', 'taxonomy-bar'];
+            charts.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) Plotly.Plots.resize(el);
+            });
+        });
+    </script>
+</body>
+</html>
