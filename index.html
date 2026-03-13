@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aviation Maint. Intelligence (Ultimate V11.28)</title>
+    <title>Aviation Maint. Intelligence (Ultimate V11.28 Auto-Load)</title>
     
     <!-- Libraries (Standardized CDNs) -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -113,7 +113,7 @@
                 <i class="fa-solid fa-jet-fighter-up text-2xl text-blue-400"></i>
                 <div>
                     <h1 class="text-xl font-bold tracking-wide">Maint. Intelligence</h1>
-                    <span class="text-xs text-blue-300">Ultimate V11.28 (ECharts Stability Fix)</span>
+                    <span class="text-xs text-blue-300">Ultimate V11.28 (Auto-Load Version)</span>
                 </div>
             </div>
             <div class="hidden md:block text-xs bg-blue-800 px-3 py-1 rounded-full">Pilot Complaint Analyzer</div>
@@ -250,26 +250,15 @@
 
     <div class="container mx-auto p-6">
         
-        <!-- Upload Section -->
-        <div id="upload-section" class="mb-8">
-            <div class="bg-white p-10 rounded-xl shadow-lg text-center max-w-2xl mx-auto border border-gray-100">
-                <div id="drop-zone" class="drag-area p-12 rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100 group">
-                    <i class="fa-solid fa-file-csv text-6xl text-slate-300 group-hover:text-blue-500 transition mb-4"></i>
-                    <h2 class="text-xl font-bold text-gray-700">Drop CSV File Here</h2>
-                    <p class="text-sm text-gray-500 mt-2">Pilot Complaint_All Fleet_Period.csv</p>
-                    <input type="file" id="file-input" accept=".csv" class="hidden">
-                </div>
-            </div>
-        </div>
-
         <!-- Loading Screen -->
-        <div id="loading-screen" class="hidden flex flex-col items-center justify-center py-20 animate-fade-in">
+        <div id="loading-screen" class="flex flex-col items-center justify-center py-20 animate-fade-in">
             <div class="relative">
                 <div class="w-24 h-24 border-4 border-blue-200 border-t-blue-600 rounded-full loader-spin"></div>
                 <i class="fa-solid fa-plane text-blue-600 text-xl absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></i>
             </div>
-            <h2 class="mt-6 text-xl font-bold text-gray-700">Processing Logbook Data...</h2>
-            <p class="text-sm text-gray-500 mt-2">Applying Business Logic & Creating Analytics...</p>
+            <h2 class="mt-6 text-xl font-bold text-gray-700">Connecting to Data Source...</h2>
+            <p class="text-sm text-gray-500 mt-2">Loading data.csv from server...</p>
+            <div id="error-message" class="hidden mt-4 text-red-500 font-bold bg-red-100 p-4 rounded border border-red-300 text-center"></div>
         </div>
 
         <!-- Dashboard UI -->
@@ -870,37 +859,38 @@
         let globalFuzzyMap = {}; 
         let currentFuzzySuggestions = []; 
         
-        const dropZone = document.getElementById('drop-zone');
-        const fileInput = document.getElementById('file-input');
-        
-        // --- 2. EVENT LISTENERS ---
-        dropZone.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', e => { if(e.target.files.length) startProcessing(e.target.files[0]); });
-        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('active'); });
-        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('active'));
-        dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('active'); if(e.dataTransfer.files.length) startProcessing(e.dataTransfer.files[0]); });
-
-        function startProcessing(file) {
-            document.getElementById('upload-section').classList.add('hidden');
-            document.getElementById('loading-screen').classList.remove('hidden');
-            setTimeout(() => { processFile(file); }, 100);
-        }
-
-        function processFile(file) {
-            Papa.parse(file, {
-                header: true, skipEmptyLines: true,
-                complete: res => {
-                    rawData = res.data;
-                    analyzeData();
-                    document.getElementById('loading-screen').classList.add('hidden');
-                    document.getElementById('dashboard-ui').classList.remove('hidden');
-                    document.getElementById('fuzzy-trigger').classList.remove('hidden'); // Show Data Prep Trigger
-                    
-                    // สั่งสแกนทันทีที่โหลดข้อมูลเสร็จ
-                    runFuzzyMatching();
-                }
-            });
-        }
+        // --- AUTO LOAD LOGIC ---
+        window.onload = function() {
+            // Start fetching data immediately
+            fetch('./data.csv')
+                .then(response => {
+                    if (!response.ok) throw new Error("Could not find data.csv");
+                    return response.text();
+                })
+                .then(csvText => {
+                    Papa.parse(csvText, {
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: res => {
+                            rawData = res.data;
+                            if (rawData.length > 0) {
+                                analyzeData();
+                                document.getElementById('loading-screen').classList.add('hidden');
+                                document.getElementById('dashboard-ui').classList.remove('hidden');
+                                document.getElementById('fuzzy-trigger').classList.remove('hidden');
+                                runFuzzyMatching();
+                            } else {
+                                throw new Error("CSV file is empty");
+                            }
+                        }
+                    });
+                })
+                .catch(error => {
+                    const errDiv = document.getElementById('error-message');
+                    errDiv.classList.remove('hidden');
+                    errDiv.innerHTML = `Error: ${error.message}<br><br>Please make sure you have a file named 'data.csv' uploaded in the same GitHub repository.`;
+                });
+        };
 
         // --- NEW: DATA PREP MODAL LOGIC ---
         function toggleFuzzySidebar() {
