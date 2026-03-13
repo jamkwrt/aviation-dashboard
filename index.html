@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aviation Maint. Intelligence (Auto-Load)</title>
+    <title>Aviation Maint. Intelligence (Ultimate V11.28)</title>
     
     <!-- Libraries (Standardized CDNs) -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -19,6 +19,8 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; }
         
         /* UI Components */
+        .drag-area { border: 2px dashed #3b82f6; transition: all 0.3s; }
+        .drag-area.active { border-color: #1e40af; background-color: #eff6ff; }
         .tab-btn.active { border-bottom: 3px solid #004B87; color: #004B87; font-weight: 600; }
         .card { background: white; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         .animate-fade-in { animation: fadeIn 0.5s ease-in-out; }
@@ -61,9 +63,48 @@
         .trend-btn { font-size: 0.75rem; padding: 0.25rem 0.75rem; border: 1px solid #e5e7eb; border-radius: 0.25rem; transition: all 0.2s; }
         .trend-btn:hover { background-color: #f3f4f6; }
         .trend-btn.active { background-color: #3b82f6; color: white; border-color: #3b82f6; }
+
+        /* Fullscreen Card Styles */
+        .card-fullscreen {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 9999 !important;
+            border-radius: 0 !important;
+            margin: 0 !important;
+            max-width: none !important;
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden !important; 
+        }
+        .card-fullscreen > * {
+            flex-shrink: 0; 
+        }
+        .chart-fullscreen {
+            flex-grow: 1 !important; 
+            flex-shrink: 1 !important;
+            min-height: 0 !important; 
+            height: auto !important;
+            max-height: none !important; 
+        }
     </style>
 </head>
 <body class="text-gray-800" onclick="closeAllDropdowns(event)">
+
+    <!-- NEW: Custom Beautiful Tooltip Container (Modified for CLICK and high z-index) -->
+    <div id="custom-action-tooltip" style="z-index: 10000;" class="fixed hidden transition-opacity duration-75 bg-slate-900 text-slate-200 rounded-lg shadow-2xl p-4 w-[450px] border border-slate-700">
+        <button onclick="hideActionTooltip()" class="absolute top-2 right-2 text-gray-400 hover:text-white bg-slate-800 hover:bg-rose-500 rounded-full w-6 h-6 flex items-center justify-center transition-colors"><i class="fa-solid fa-times"></i></button>
+        <div class="mb-3 pr-4">
+            <span class="font-bold text-blue-400 text-[10px] uppercase tracking-wider block mb-1"><i class="fa-solid fa-wrench mr-1"></i>Activity Text</span>
+            <div id="tt-act-text" class="text-xs leading-relaxed whitespace-pre-wrap break-words bg-slate-800 p-2.5 rounded border border-slate-700 shadow-inner min-h-[40px] max-h-[200px] overflow-y-auto custom-scroll"></div>
+        </div>
+        <div>
+            <span class="font-bold text-amber-400 text-[10px] uppercase tracking-wider block mb-1"><i class="fa-solid fa-tag mr-1"></i>Activity Code Text</span>
+            <div id="tt-act-code" class="text-xs leading-relaxed font-semibold bg-slate-800 p-2.5 rounded border border-slate-700 shadow-inner"></div>
+        </div>
+    </div>
 
     <!-- Navbar -->
     <nav class="bg-slate-900 text-white p-4 shadow-lg sticky top-0 z-50">
@@ -72,24 +113,163 @@
                 <i class="fa-solid fa-jet-fighter-up text-2xl text-blue-400"></i>
                 <div>
                     <h1 class="text-xl font-bold tracking-wide">Maint. Intelligence</h1>
-                    <span class="text-xs text-blue-300">Ultimate V11.27 (Auto-Load Version)</span>
+                    <span class="text-xs text-blue-300">Ultimate V11.28 (ECharts Stability Fix)</span>
                 </div>
             </div>
             <div class="hidden md:block text-xs bg-blue-800 px-3 py-1 rounded-full">Pilot Complaint Analyzer</div>
         </div>
     </nav>
 
+    <!-- NEW: Fuzzy Matching Floating Button -->
+    <div id="fuzzy-trigger" class="fixed top-1/2 left-0 z-40 transform -translate-y-1/2 hidden transition-all hover:pl-2">
+        <button onclick="toggleFuzzySidebar()" class="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-r-xl shadow-lg border border-purple-800 border-l-0 flex flex-col items-center gap-1 group">
+            <i class="fa-solid fa-wand-magic-sparkles text-xl group-hover:scale-110 transition-transform"></i>
+            <span class="text-[10px] font-bold uppercase" style="writing-mode: vertical-rl; text-orientation: mixed;">Data Prep</span>
+        </button>
+    </div>
+
+    <!-- UPDATED: Fullscreen Data Prep Modal -->
+    <div id="fuzzy-modal" class="fixed inset-0 w-full h-full bg-gray-100 z-[100] hidden flex-col animate-fade-in">
+        <!-- Header -->
+        <div class="bg-slate-900 text-white p-4 px-6 flex justify-between items-center shadow-md shrink-0 border-b-4 border-purple-600">
+            <div>
+                <h2 class="text-xl font-bold"><i class="fa-solid fa-wand-magic-sparkles text-purple-400 mr-3"></i>Data Preparation Studio</h2>
+                <p class="text-sm text-slate-300 mt-1">Manage system vocabulary and view extracted text data.</p>
+            </div>
+            <button onclick="toggleFuzzySidebar()" class="text-slate-300 hover:text-white text-3xl leading-none" title="Close Window">&times;</button>
+        </div>
+
+        <!-- Body Layout -->
+        <div class="flex-1 overflow-hidden flex flex-col p-6 gap-6">
+            <!-- Right Content (Tabs & Data) -->
+            <div class="flex-1 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden relative">
+                
+                <!-- Inner Tabs -->
+                <div class="flex border-b border-gray-200 bg-gray-50 shrink-0">
+                    <button id="modal-tab-btn-vocab" class="px-6 py-4 font-bold text-sm text-purple-700 border-b-2 border-purple-600 focus:outline-none transition-colors" onclick="switchModalTab('vocab')">
+                        <i class="fa-solid fa-book-bookmark mr-2"></i>Master Vocabulary
+                    </button>
+                    <button id="modal-tab-btn-audit" class="px-6 py-4 font-bold text-sm text-gray-500 border-b-2 border-transparent hover:text-gray-700 focus:outline-none transition-colors" onclick="switchModalTab('audit')">
+                        <i class="fa-solid fa-magnifying-glass-chart mr-2"></i>Mining Audit
+                    </button>
+                </div>
+
+                <!-- Tab Content: Master Vocabulary -->
+                <div id="modal-tab-vocab" class="flex-1 overflow-auto custom-scroll p-6 bg-gray-50">
+                    <div class="mb-4">
+                        <h3 class="text-lg font-bold text-gray-800">System Dictionary</h3>
+                        <p class="text-sm text-gray-500">List of authorized keywords used for text mining and Sankey flow generation.</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100%-60px)] min-h-[400px]">
+                        <!-- Symptom Col -->
+                        <div class="bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
+                            <div class="bg-rose-50 border-b border-rose-100 p-3 shrink-0 flex justify-between items-center">
+                                <span class="font-bold text-rose-800"><i class="fa-solid fa-triangle-exclamation mr-2"></i>Symptom</span>
+                                <span class="bg-rose-100 text-rose-800 text-xs font-bold px-2 py-1 rounded-full" id="count-symp">0</span>
+                            </div>
+                            <div class="flex-1 overflow-y-auto custom-scroll p-2 text-sm text-gray-700" id="list-symp"></div>
+                        </div>
+
+                        <!-- Component Col -->
+                        <div class="bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
+                            <div class="bg-indigo-50 border-b border-indigo-100 p-3 shrink-0 flex justify-between items-center">
+                                <span class="font-bold text-indigo-800"><i class="fa-solid fa-microchip mr-2"></i>Component</span>
+                                <span class="bg-indigo-100 text-indigo-800 text-xs font-bold px-2 py-1 rounded-full" id="count-comp">0</span>
+                            </div>
+                            <div class="flex-1 overflow-y-auto custom-scroll p-2 text-sm text-gray-700" id="list-comp"></div>
+                        </div>
+
+                        <!-- Action Col -->
+                        <div class="bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
+                            <div class="bg-emerald-50 border-b border-emerald-100 p-3 shrink-0 flex justify-between items-center">
+                                <span class="font-bold text-emerald-800"><i class="fa-solid fa-wrench mr-2"></i>Action</span>
+                                <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-1 rounded-full" id="count-act">0</span>
+                            </div>
+                            <div class="flex-1 overflow-y-auto custom-scroll p-2 text-sm text-gray-700" id="list-act"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NEW TAB CONTENT: Mining Audit (Summary Table + Detail Table) -->
+                <div id="modal-tab-audit" class="hidden flex-1 overflow-hidden p-6 bg-gray-50 flex-col lg:flex-row gap-6">
+                    
+                    <!-- Summary Table Section (Left) -->
+                    <div class="w-full lg:w-1/5 xl:w-64 shrink-0 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden h-full">
+                        <div class="p-3 bg-white border-b border-gray-200 shrink-0">
+                            <h3 class="text-sm font-bold text-gray-800"><i class="fa-solid fa-list-ol mr-2 text-purple-600"></i>Word Frequency</h3>
+                        </div>
+                        <div class="flex-1 overflow-auto custom-scroll p-0 relative">
+                            <table class="w-full text-xs text-left">
+                                <thead class="uppercase sticky top-0 shadow-sm z-10 text-gray-600 bg-gray-100">
+                                    <tr>
+                                        <th class="px-4 py-3 border-b border-gray-200">Dictionary Word</th>
+                                        <th class="px-4 py-3 border-b border-gray-200 text-center">Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="audit-summary-tbody" class="divide-y divide-gray-100 text-gray-700 bg-white"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Table Section (Right) -->
+                    <div class="flex-1 min-w-0 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden h-full" id="audit-trail-card">
+                        <div class="p-3 bg-white border-b border-gray-200 flex justify-between items-center shrink-0">
+                            <h3 class="text-sm font-bold text-gray-800"><i class="fa-solid fa-list-check mr-2 text-purple-600"></i>Text Extraction Audit Trail</h3>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="toggleFullscreen('audit-trail-card', 'audit-trail-container')" class="text-xs bg-white border border-gray-300 px-2 py-1.5 rounded shadow-sm hover:bg-gray-50 flex items-center text-gray-600 transition" title="Toggle Fullscreen">
+                                    <i class="fa-solid fa-expand"></i>
+                                </button>
+                                <button onclick="exportAuditData()" class="text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded shadow-sm flex items-center transition"><i class="fa-solid fa-file-excel mr-1"></i>Export Excel</button>
+                            </div>
+                        </div>
+                        <div class="flex-1 overflow-auto custom-scroll p-0 relative" id="audit-trail-container">
+                            <table class="w-full text-xs text-left">
+                                <thead class="uppercase sticky top-0 shadow-sm z-10 text-gray-600 bg-gray-100">
+                                    <tr>
+                                        <th class="px-4 py-3 border-b border-gray-200 whitespace-nowrap text-center w-12">#</th>
+                                        <th class="px-4 py-3 border-b border-gray-200 whitespace-nowrap">ACREG</th>
+                                        <th class="px-4 py-3 border-b border-gray-200 whitespace-nowrap">Main ATA</th>
+                                        <th class="px-4 py-3 border-b border-gray-200 whitespace-nowrap">Date</th>
+                                        <th class="px-4 py-3 border-b border-gray-200 whitespace-nowrap">Notification</th>
+                                        <th class="px-4 py-3 border-b border-gray-200 w-full min-w-[250px]">Complaint Text</th>
+                                        <th class="px-4 py-3 border-b-2 border-rose-300 text-rose-800 bg-rose-50 w-32 whitespace-nowrap"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Symptom</th>
+                                        <th class="px-4 py-3 border-b-2 border-indigo-300 text-indigo-800 bg-indigo-50 w-32 whitespace-nowrap"><i class="fa-solid fa-screwdriver-wrench mr-1"></i> Component</th>
+                                        <th class="px-4 py-3 border-b-2 border-teal-300 text-teal-800 bg-teal-50 w-40 whitespace-nowrap"><i class="fa-solid fa-clipboard-check mr-1"></i> L2 Summary</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="audit-tbody" class="divide-y divide-gray-100 text-gray-700 bg-white"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
     <div class="container mx-auto p-6">
         
-        <!-- Loading Screen (Shows Immediately) -->
-        <div id="loading-screen" class="flex flex-col items-center justify-center py-20 animate-fade-in">
+        <!-- Upload Section -->
+        <div id="upload-section" class="mb-8">
+            <div class="bg-white p-10 rounded-xl shadow-lg text-center max-w-2xl mx-auto border border-gray-100">
+                <div id="drop-zone" class="drag-area p-12 rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100 group">
+                    <i class="fa-solid fa-file-csv text-6xl text-slate-300 group-hover:text-blue-500 transition mb-4"></i>
+                    <h2 class="text-xl font-bold text-gray-700">Drop CSV File Here</h2>
+                    <p class="text-sm text-gray-500 mt-2">Pilot Complaint_All Fleet_Period.csv</p>
+                    <input type="file" id="file-input" accept=".csv" class="hidden">
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Screen -->
+        <div id="loading-screen" class="hidden flex flex-col items-center justify-center py-20 animate-fade-in">
             <div class="relative">
                 <div class="w-24 h-24 border-4 border-blue-200 border-t-blue-600 rounded-full loader-spin"></div>
                 <i class="fa-solid fa-plane text-blue-600 text-xl absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></i>
             </div>
-            <h2 class="mt-6 text-xl font-bold text-gray-700">Connecting to Data Source...</h2>
-            <p class="text-sm text-gray-500 mt-2">Loading data.csv from server...</p>
-            <div id="error-message" class="hidden mt-4 text-red-500 font-bold bg-red-100 p-4 rounded border border-red-300"></div>
+            <h2 class="mt-6 text-xl font-bold text-gray-700">Processing Logbook Data...</h2>
+            <p class="text-sm text-gray-500 mt-2">Applying Business Logic & Creating Analytics...</p>
         </div>
 
         <!-- Dashboard UI -->
@@ -102,7 +282,6 @@
                     <button onclick="resetFilters()" class="text-xs text-blue-600 hover:text-blue-800 font-semibold">Reset All</button>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-9 gap-3">
-                    <!-- Filters -->
                     <div class="relative group"><label class="text-xs text-gray-500 block mb-1">Aircraft Type</label><button id="btn-type" onclick="toggleDropdown('ms-type', event)" class="w-full text-sm border rounded px-2 py-1 bg-gray-50 text-left flex justify-between items-center focus:ring-2 focus:ring-blue-500"><span class="truncate">All</span><i class="fa-solid fa-chevron-down text-xs text-gray-400"></i></button><div id="ms-type" class="ms-dropdown custom-scroll"></div></div>
                     <div class="relative group"><label class="text-xs text-gray-500 block mb-1">Model</label><button id="btn-model" onclick="toggleDropdown('ms-model', event)" class="w-full text-sm border rounded px-2 py-1 bg-gray-50 text-left flex justify-between items-center focus:ring-2 focus:ring-blue-500"><span class="truncate">All</span><i class="fa-solid fa-chevron-down text-xs text-gray-400"></i></button><div id="ms-model" class="ms-dropdown custom-scroll"></div></div>
                     <div class="relative group"><label class="text-xs text-gray-500 block mb-1">Registration</label><button id="btn-reg" onclick="toggleDropdown('ms-reg', event)" class="w-full text-sm border rounded px-2 py-1 bg-gray-50 text-left flex justify-between items-center focus:ring-2 focus:ring-blue-500"><span class="truncate">All</span><i class="fa-solid fa-chevron-down text-xs text-gray-400"></i></button><div id="ms-reg" class="ms-dropdown custom-scroll"></div></div>
@@ -128,11 +307,14 @@
             <div class="bg-white rounded-lg shadow-sm p-2 mb-6 overflow-x-auto">
                 <div class="flex space-x-2 min-w-max">
                     <button id="nav-btn-overview" class="tab-btn active px-4 py-2 rounded hover:bg-gray-50 transition text-sm" onclick="switchTab('overview')"><i class="fa-solid fa-chart-pie mr-2"></i>Overview</button>
+                    <!-- Matrix Button Removed -->
                     <button id="nav-btn-fleet" class="tab-btn px-4 py-2 rounded hover:bg-gray-50 transition text-sm" onclick="switchTab('fleet')"><i class="fa-solid fa-plane mr-2"></i>Fleet Health</button>
                     <button id="nav-btn-rootcause" class="tab-btn px-4 py-2 rounded hover:bg-gray-50 transition text-sm" onclick="switchTab('rootcause')"><i class="fa-solid fa-wrench mr-2"></i>Root Cause</button>
                     <button id="nav-btn-phrase" class="tab-btn px-4 py-2 rounded hover:bg-gray-50 transition text-sm" onclick="switchTab('phrase')"><i class="fa-solid fa-quote-right mr-2"></i>Phrase Mining</button>
                     <button id="nav-btn-chronic" class="tab-btn px-4 py-2 rounded hover:bg-gray-50 transition text-sm text-red-600 font-bold" onclick="switchTab('chronic')"><i class="fa-solid fa-clock-rotate-left mr-2"></i>Chronic</button>
                     <button id="nav-btn-statement" class="tab-btn px-4 py-2 rounded hover:bg-gray-50 transition text-sm" onclick="switchTab('statement')"><i class="fa-solid fa-file-signature mr-2"></i>Problem Statement</button>
+                    <!-- NEW SUMMARY TAB BUTTON -->
+                    <button id="nav-btn-summary" class="tab-btn px-4 py-2 rounded hover:bg-gray-50 transition text-sm" onclick="switchTab('summary')"><i class="fa-solid fa-list-alt mr-2 text-indigo-600"></i>Complaint Summary</button>
                     <button id="nav-btn-rawdata" class="tab-btn px-4 py-2 rounded hover:bg-gray-50 transition text-sm" onclick="switchTab('rawdata')"><i class="fa-solid fa-table mr-2"></i>Raw Data</button>
                 </div>
             </div>
@@ -143,7 +325,7 @@
                 <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
                     
                     <!-- Trend Analysis (Left 3/4) -->
-                    <div class="lg:col-span-3 card p-6">
+                    <div class="lg:col-span-3 card p-6" id="trend-card">
                         <div class="flex justify-between items-center mb-4">
                             <div class="flex items-center space-x-3">
                                 <h3 class="font-bold text-gray-700">Defect Trend Analysis (By Model)</h3>
@@ -154,8 +336,9 @@
                                     <button onclick="setTrendFreq('Month')" id="freq-month" class="trend-btn">Month</button>
                                 </div>
                             </div>
-                            <div class="flex space-x-2">
+                            <div class="flex items-center space-x-2">
                                 <span class="text-xs text-blue-500 bg-blue-50 px-2 py-1 rounded"><i class="fa-solid fa-computer-mouse mr-1"></i>Drilldown</span>
+                                <button onclick="toggleFullscreen('trend-card', 'trend-chart')" class="text-gray-400 hover:text-blue-600 transition" title="Toggle Fullscreen"><i class="fa-solid fa-expand"></i></button>
                                 <button onclick="exportTrendData()" class="text-gray-400 hover:text-green-600 transition" title="Export to Excel"><i class="fa-solid fa-file-excel"></i></button>
                             </div>
                         </div>
@@ -167,14 +350,14 @@
                         <!-- Top 5 Aircraft -->
                         <div class="card p-4 flex-1">
                             <h4 class="text-sm font-bold text-gray-700 border-b pb-2 mb-2"><i class="fa-solid fa-plane-up mr-2 text-purple-500"></i>Top 5 Aircraft</h4>
-                            <div id="top5-ac-list" class="space-y-2 overflow-y-auto max-h-[160px] custom-scroll">
+                            <div id="top5-ac-list" class="overflow-y-auto max-h-[250px] custom-scroll pr-1">
                                 <!-- JS Populated -->
                             </div>
                         </div>
                         <!-- Top 5 ATA -->
                         <div class="card p-4 flex-1">
                             <h4 class="text-sm font-bold text-gray-700 border-b pb-2 mb-2"><i class="fa-solid fa-wrench mr-2 text-yellow-500"></i>Top 5 ATA</h4>
-                            <div id="top5-ata-list" class="space-y-2 overflow-y-auto max-h-[160px] custom-scroll">
+                            <div id="top5-ata-list" class="overflow-y-auto max-h-[250px] custom-scroll pr-1">
                                 <!-- JS Populated -->
                             </div>
                         </div>
@@ -203,9 +386,11 @@
                 </div>
             </div>
 
+            <!-- Tab Matrix Removed -->
+
             <div id="tab-fleet" class="tab-content hidden animate-fade-in">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                    <div class="card p-6">
+                    <div class="card p-6" id="fleet-card">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="font-bold text-gray-700">Aircraft Reliability</h3>
                             <div class="flex items-center space-x-2">
@@ -214,6 +399,7 @@
                                     <button onclick="setFleetLimit(10)" class="text-xs px-2 py-1 border rounded hover:bg-gray-100 bg-gray-100 font-bold">Top 10</button>
                                     <button onclick="setFleetLimit('ALL')" class="text-xs px-2 py-1 border rounded hover:bg-gray-100">All</button>
                                 </div>
+                                <button onclick="toggleFullscreen('fleet-card', 'fleet-chart')" class="text-gray-400 hover:text-blue-600 transition" title="Toggle Fullscreen"><i class="fa-solid fa-expand"></i></button>
                                 <button onclick="exportFleetData()" class="text-gray-400 hover:text-green-600 transition" title="Export to Excel"><i class="fa-solid fa-file-excel"></i></button>
                             </div>
                         </div>
@@ -225,16 +411,21 @@
                     </div>
                 </div>
                 
-                <div class="card p-6">
+                <!-- MOVED MATRIX HEATMAP HERE -->
+                <div class="card p-6" id="matrix-card">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-gray-700">Fleet Defect Heatmap (Aircraft vs ATA)</h3>
-                        <button onclick="exportMatrixData()" class="text-gray-400 hover:text-green-600 transition" title="Export to Excel"><i class="fa-solid fa-file-excel"></i></button>
+                        <div class="flex space-x-2">
+                            <button onclick="toggleFullscreen('matrix-card', 'matrix-chart')" class="text-gray-400 hover:text-blue-600 transition" title="Toggle Fullscreen"><i class="fa-solid fa-expand"></i></button>
+                            <button onclick="exportMatrixData()" class="text-gray-400 hover:text-green-600 transition" title="Export to Excel"><i class="fa-solid fa-file-excel"></i></button>
+                        </div>
                     </div>
                     <div id="matrix-chart" style="height:600px;"></div>
                 </div>
             </div>
 
             <div id="tab-rootcause" class="tab-content hidden animate-fade-in">
+                <!-- MOVED ATA PARETO HERE (TOP) -->
                 <div class="card p-6 mb-6">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-gray-700">ATA Pareto</h3>
@@ -257,10 +448,19 @@
             </div>
 
             <div id="tab-phrase" class="tab-content hidden animate-fade-in">
-                <!-- 1. Word Frequency Analysis -->
+                <!-- 1. Word Frequency Analysis (Moved to Top) -->
                 <div class="card p-6 mb-6">
                     <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
-                        <h3 class="font-bold text-gray-700">Word Frequency Analysis (Raw Count)</h3>
+                        <div class="flex items-center space-x-4">
+                            <h3 class="font-bold text-gray-700">Word Frequency Analysis (Dictionary Matched)</h3>
+                            <!-- เพิ่มคำอธิบายสีแท่งกราฟ -->
+                            <div class="hidden md:flex items-center space-x-2 text-[10px] font-bold text-gray-500">
+                                <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-[#E11D48] mr-1"></span>Symptom</span>
+                                <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-[#4F46E5] mr-1"></span>Component</span>
+                                <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-[#10B981] mr-1"></span>Action</span>
+                                <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-[#94A3B8] mr-1"></span>Others</span>
+                            </div>
+                        </div>
                         <div class="flex items-center space-x-2">
                             <select id="ngram-col" class="bg-gray-50 border rounded text-sm px-3 py-1 focus:outline-none" onchange="runNgramAnalysis(currentFilteredData)">
                                 <option value="Complaint Text">Pilot Complaint</option>
@@ -272,21 +472,25 @@
                     <div id="ngram-chart" style="height:400px;"></div>
                 </div>
 
-                <!-- 2. Defect Resolution Flow (Sankey) -->
+                <!-- 2. Defect Resolution Flow (Sankey) - Extracted as separate card -->
                 <div class="card p-6 mb-6">
-                      <div class="flex justify-between items-center mb-4">
-                          <h3 class="font-bold text-gray-700">🌊 Defect Resolution Flow (Symptom -> Component -> Action)</h3>
-                          <button onclick="exportResolutionFlow()" class="text-gray-400 hover:text-green-600 transition" title="Export Sankey Flow"><i class="fa-solid fa-file-excel"></i></button>
-                     </div>
+                     <div class="flex justify-between items-center mb-4">
+                         <h3 class="font-bold text-gray-700">🌊 Defect Resolution Flow (Symptom -> Component -> Action)</h3>
+                         <!-- Export Button -->
+                         <button onclick="exportResolutionFlow()" class="text-gray-400 hover:text-green-600 transition" title="Export Sankey Flow"><i class="fa-solid fa-file-excel"></i></button>
+                    </div>
                     <div id="echart-sankey" style="height: 500px;"></div>
                 </div>
 
-                <!-- 3. Advanced Text Mining Insights (Risk Matrix) -->
+                <!-- 3. Advanced Text Mining Insights (Risk Matrix) - Moved to Bottom -->
                 <div class="card p-6 mb-6">
                     <h3 class="font-bold text-gray-700 mb-4"><i class="fa-solid fa-microscope mr-2 text-purple-600"></i>Advanced Text Mining Insights (ECharts)</h3>
+                    
+                    <!-- Risk Matrix (Full Width) -->
                     <div class="border rounded-lg p-4 relative">
                          <div class="flex justify-between items-center mb-2">
                             <h4 class="text-sm font-bold text-gray-600">🔥 Flight Phase Risk Matrix (Symptom vs Phase)</h4>
+                             <!-- Export Button -->
                             <button onclick="exportRiskMatrix()" class="text-gray-400 hover:text-green-600 transition" title="Export Risk Matrix"><i class="fa-solid fa-file-excel"></i></button>
                         </div>
                         <div id="echart-heatmap" style="height: 400px;"></div>
@@ -331,18 +535,67 @@
                 </div>
             </div>
 
+            <!-- NEW TAB: COMPLAINT SUMMARY -->
+            <div id="tab-summary" class="tab-content hidden animate-fade-in">
+                <div class="flex flex-col gap-6">
+                    
+                    <!-- 1. Original Grouped Summary Card -->
+                    <div class="card p-6" id="summary-original-card">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-layer-group mr-2 text-blue-600"></i>Grouped Complaint Summary (Raw Text)</h3>
+                                <p class="text-sm text-gray-500 mt-1">Hierarchical view of technical complaints. <span class="font-bold text-blue-600">Click the complaint text to view repair activity.</span></p>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="toggleFullscreen('summary-original-card', 'summary-original-content')" class="text-xs bg-white border border-gray-300 px-3 py-1.5 rounded shadow-sm hover:bg-gray-50 flex items-center text-gray-600 transition" title="Toggle Fullscreen">
+                                    <i class="fa-solid fa-expand"></i>
+                                </button>
+                                <button onclick="exportOriginalSummaryData()" class="text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded shadow-sm flex items-center transition"><i class="fa-solid fa-file-excel mr-1"></i>Export Excel</button>
+                            </div>
+                        </div>
+                        <div id="summary-original-content" class="overflow-auto custom-scroll p-0 border border-gray-200 rounded-lg bg-gray-50" style="max-height: 450px;">
+                            <!-- JS populated original grouped table -->
+                        </div>
+                    </div>
+
+                    <!-- 2. L2 Standardized Issue Summary Card -->
+                    <div class="card p-6 border-t-4 border-teal-500" id="summary-l2-card">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-clipboard-check mr-2 text-teal-600"></i>Standardized Issue Summary (L2)</h3>
+                                <p class="text-sm text-gray-500 mt-1">Complaints categorized by Standard Issue (L2). <span class="font-bold text-blue-600">Click the blue issue names to view raw data records.</span></p>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="toggleFullscreen('summary-l2-card', 'summary-l2-content')" class="text-xs bg-white border border-gray-300 px-3 py-1.5 rounded shadow-sm hover:bg-gray-50 flex items-center text-gray-600 transition" title="Toggle Fullscreen">
+                                    <i class="fa-solid fa-expand"></i>
+                                </button>
+                                <button onclick="exportL2SummaryData()" class="text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded shadow-sm flex items-center transition"><i class="fa-solid fa-file-excel mr-1"></i>Export Excel</button>
+                            </div>
+                        </div>
+                        <div id="summary-l2-content" class="overflow-auto custom-scroll p-0 border border-gray-200 rounded-lg bg-gray-50" style="max-height: 450px;">
+                            <!-- JS populated L2 grouped table -->
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
             <div id="tab-rawdata" class="tab-content hidden animate-fade-in">
-                <div class="card p-6">
+                <div class="card p-6" id="raw-card">
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 space-y-2 md:space-y-0">
                         <div>
                             <h3 class="font-bold text-gray-700">Source Data View</h3>
                             <div id="raw-count" class="text-xs text-gray-500"></div>
                         </div>
                         
-                        <div class="flex space-x-2">
+                        <div class="flex space-x-2 items-center">
+                            <!-- Fullscreen Button -->
+                            <button onclick="toggleFullscreen('raw-card', 'raw-table-container')" class="text-sm bg-white border border-gray-300 px-3 py-1.5 rounded shadow-sm hover:bg-gray-50 flex items-center text-gray-600" title="Toggle Fullscreen">
+                                <i class="fa-solid fa-expand"></i>
+                            </button>
                              <!-- Export Full Data -->
                             <button onclick="exportRawData()" class="text-sm bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded shadow-sm flex items-center">
-                                <i class="fa-solid fa-file-excel mr-2"></i>Export All
+                                <i class="fa-solid fa-file-excel mr-2"></i>Excel
                             </button>
                             <!-- Table Search -->
                             <div class="relative">
@@ -363,7 +616,7 @@
                         </div>
                     </div>
                     <!-- Table Container with Fixed Height & Scroll -->
-                    <div class="overflow-auto custom-scroll max-h-[600px] border rounded shadow-inner relative">
+                    <div id="raw-table-container" class="overflow-auto custom-scroll max-h-[600px] border rounded shadow-inner relative">
                         <!-- Updated class: removed whitespace-nowrap -->
                         <table class="w-full text-sm text-left text-gray-600" id="raw-data-table"></table>
                     </div>
@@ -384,12 +637,203 @@
     </div>
 
     <script>
+        // --- JS LOGIC FOR CUSTOM TOOLTIP ---
+        let tooltipActive = false;
+        let clickOriginX = 0;
+        let clickOriginY = 0;
+
+        function showActionTooltip(event, tdElement) {
+            event.stopPropagation(); // ป้องกันไม่ให้คลิกทะลุไปโดนตัวปิดกล่องทันที
+            
+            const tooltip = document.getElementById('custom-action-tooltip');
+            const actText = tdElement.getAttribute('data-act');
+            const actCode = tdElement.getAttribute('data-code');
+            
+            document.getElementById('tt-act-text').innerText = actText || 'No Activity Data';
+            document.getElementById('tt-act-code').innerText = actCode || '-';
+            
+            tooltip.classList.remove('hidden');
+            
+            // กำหนดตำแหน่งกล่องให้อยู่ใกล้ๆ จุดที่คลิก
+            const rect = tooltip.getBoundingClientRect();
+            let mouseX = event.clientX + 15;
+            let mouseY = event.clientY + 15;
+            
+            // ป้องกันไม่ให้ Tooltip ล้นจอ
+            if (mouseX + rect.width > window.innerWidth) {
+                mouseX = window.innerWidth - rect.width - 10;
+            }
+            if (mouseY + rect.height > window.innerHeight) {
+                mouseY = event.clientY - rect.height - 15;
+            }
+            
+            tooltip.style.left = mouseX + 'px';
+            tooltip.style.top = mouseY + 'px';
+            tooltip.classList.remove('opacity-0');
+
+            // บันทึกตำแหน่งที่คลิกเพื่อใช้ตรวจสอบการเลื่อนเมาส์
+            clickOriginX = event.clientX;
+            clickOriginY = event.clientY;
+            tooltipActive = true;
+        }
+
+        function hideActionTooltip() {
+            const tooltip = document.getElementById('custom-action-tooltip');
+            tooltip.classList.add('opacity-0');
+            tooltip.classList.add('hidden'); // ซ่อนไปเลย ไม่ต้องหน่วง
+            tooltipActive = false;
+        }
+        
+        // ฟังก์ชันสำหรับปิดกล่อง Tooltip เมื่อคลิกที่ว่างๆ (ที่อื่นๆ นอกกล่อง)
+        document.addEventListener('click', function(event) {
+            const tooltip = document.getElementById('custom-action-tooltip');
+            if (!tooltip.classList.contains('hidden') && !tooltip.contains(event.target)) {
+                hideActionTooltip();
+            }
+        });
+
+        // ปิดกล่องเมื่อเลื่อนเมาส์ออกจากจุดที่คลิก (ระยะห่างเกิน 30px กันมือสั่นตอนคลิก)
+        document.addEventListener('mousemove', function(event) {
+            if (tooltipActive) {
+                const tooltip = document.getElementById('custom-action-tooltip');
+                // ถ้าเอาเมาส์เข้าไปชี้ในกล่อง Tooltip ให้ถือว่ากำลังอ่านอยู่ ไม่ต้องปิด
+                if (tooltip.contains(event.target)) return;
+
+                const dist = Math.sqrt(Math.pow(event.clientX - clickOriginX, 2) + Math.pow(event.clientY - clickOriginY, 2));
+                if (dist > 30) {
+                    hideActionTooltip();
+                }
+            }
+        });
+
+        // ปิดกล่องเมื่อมีการ Scroll ไถหน้าจอ
+        document.addEventListener('scroll', function(event) {
+            if (tooltipActive) {
+                hideActionTooltip();
+            }
+        }, true); // ใช้ true (capture phase) เพื่อให้จับการ scroll ในตารางย่อยได้
+
+
         // --- 1. CONFIG & DICTIONARIES (STRICT LOGIC PRESERVED) ---
         const wordCategories = {
-            "Component": ["VALVE", "SENSOR", "SWITCH", "LIGHT", "PUMP", "FAN", "BATTERY", "TIRE", "SEAT", "OVEN", "PRINTER", "DISPLAY", "MCU", "ECAM", "UNIT", "ACTUATOR", "LEVER", "BUTTON", "KNOB", "MASK", "GENERATOR", "FILTER", "DETECTOR", "TRANSMITTER", "MODULE", "CONTROLLER", "HARNESS", "CONNECTOR", "BEARING", "SEAL", "GASKET", "WHEEL", "BRAKE", "PAD", "SCREW", "NUT", "BOLT", "RIVET", "PANEL", "COVER", "DOOR", "WINDOW", "GLASS", "MIRROR", "LENS", "LAMP", "BULB", "FUSE", "BREAKER", "RELAY", "CONTACT", "SOLENOID", "MOTOR", "ENGINE", "BLADE", "VANE", "SHAFT", "GEAR", "PISTON", "CYLINDER", "ROD", "SPRING", "TUBE", "PIPE", "HOSE", "DUCT", "VENT", "OUTLET", "INLET", "NOZZLE", "ORIFICE", "PLUG", "CAP", "STRAP", "CLAMP", "CLIP", "BRACKET", "MOUNT", "SUPPORT", "FRAME", "RIB", "SPAR", "SKIN", "FAIRING", "CONE", "DOME", "TIP", "EDGE", "FLAP", "SLAT", "RUDDER", "ELEVATOR", "AILERON", "SPOILER", "TAB", "STABILIZER", "FIN", "WING", "TAIL", "NOSE", "BODY", "FUSELAGE", "CABIN", "COCKPIT", "GALLEY", "LAVATORY", "TOILET", "SINK", "BASIN", "FAUCET", "DRAIN", "TANK", "RESERVOIR", "BOTTLE", "ACCUMULATOR", "F/CTL", "CTL"],
-            "Symptom": ["FAIL", "INOP", "FAULT", "LEAK", "BROKEN", "STUCK", "LOOSE", "CRACKED", "VIBRATION", "NOISE", "SMELL", "INTERMITTENT", "DAMAGED", "LOW", "HIGH", "HOT", "COLD", "UNABLE", "MISSING", "DIRTY", "WORN", "CORRODED", "RUSTY", "BENT", "DENTED", "SCRATCHED", "CHIPPED", "PEELING", "FADED", "DISCOLORED", "BURNT", "SMOKE", "SPARK", "FLAME", "FIRE", "OVERHEAT", "FREEZE", "ICE", "RAIN", "WATER", "OIL", "FUEL", "HYDRAULIC", "AIR", "OXYGEN", "NITROGEN", "GAS", "FLUID", "LIQUID", "SOLID", "HARD", "SOFT", "ROUGH", "SMOOTH", "TIGHT", "FAST", "SLOW", "LATE", "EARLY", "WRONG", "INCORRECT", "BAD", "POOR", "GOOD", "BETTER", "WORSE", "NORMAL", "ABNORMAL", "UNUSUAL", "STRANGE", "WEIRD", "FUNNY", "ODD", "LOUD", "QUIET", "SILENT", "DARK", "DIM", "BRIGHT", "FLASHING", "BLINKING", "STEADY", "ON", "OFF", "OPEN", "CLOSED", "LOCKED", "UNLOCKED", "JAMMED", "BLOCKED", "CLOGGED", "RESTRICTED", "OBSTRUCTED"],
-            "Location": ["L", "R", "L/H", "R/H", "LH", "RH", "LEFT", "RIGHT", "FWD", "AFT", "CTR", "CENTER", "UPPER", "LOWER", "TOP", "BOTTOM", "INBD", "OUTBD", "INBOARD", "OUTBOARD", "CAPT", "FO", "ENG1", "ENG2", "POS", "ZONE", "SIDE", "REAR", "FRONT", "MID", "MAIN"]
+            // ทีม 1: ชิ้นส่วน ระบบ สารเคมี และสถานที่
+            "Component": [
+                "ACARS", "ACCU", "ACCUMULATOR", "ACTUATOR", "ADGB", "ADIRU", "ADR", "ADS-B", "A-ICE", "AILERON", 
+                "AIR", "ALTIMETER", "ANTI-ICE", "APU", "ATC", "ATC/XPDR", "AUTO", "AUTO CTL", "AUTOLAND", 
+                "AVIONIC", "AVNCS", "BASIN", "BATTERY", "BEACON LT", "BEARING", "BLADE", "BLEED", "BLEED CAP", 
+                "BODY", "BOLT", "BOTTLE", "BRACKET", "BRAKE", "BRAKE TEMP", "BRAKES PART", "BREAKER", "BRK CTL", 
+                "BRK FAN", "BRK TEMP", "BULB", "BUTTON", "CAB", "CABIN", "CABIN FAN", "CAMERA", "CAP", "CASE DRAIN FILTER", 
+                "CLAMP", "CLG", "CLIP", "COCKPIT", "COCKPIT HANDSET","COM HF", "COMPRESSOR", "COMPUTER", "CONDITION", 
+                "CONE", "CONNECTOR", "CONTACT", "CONTROLLER", "COVER", "CPRSR", "CTL", "CTL SYS", "CYLINDER", 
+                "DATA", "DATABASE", "DATALINK", "DE-ICE", "DET FIRE", "DETECTOR", "DISC", "DISPLAY", "DME", 
+                "DOME", "DOME LT", "DOOR", "DOWNLOCK PIN", "DRAIN", "DUCT", "ECAM", "EDGE", "EFB", "EICAS", 
+                "ELEC", "ELEC GEN", "GEN", "ELEVATOR", "ELEVATOR ACTUATOR", "ENG", "ENG EEC", "ENGINE", "EXTERNAL", 
+                "EXTRACT FAN", "F/CTL", "FAIRING", "FAN", "FASTENER", "FAUCET", "FILTER", "FIN", "FLAP", "FLUID", 
+                "FRAME", "FUEL", "FUEL FILTER", "FUEL INERTING SYS", "FUEL QTY INDICATION", "FUEL TEMP", "FUSE", 
+                "FUSELAGE", "GALLEY", "GAS", "GASKET", "GEAR", "GEAR INDICATION SYS", "GENERATOR", "GLASS", 
+                "GLASS COVER", "GNSS", "GPS", "GPWS", "GREEN", "GUARD", "HANGAR", "HARNESS", "HOSE", "HYD FILTER", 
+                "HYD VLV HT EXCHR BYPASS", "HYDRAULIC", "ICE", "ICE DETECT", "IDENTIFIER", "IGNITOR", "INDICATION", 
+                "INLET", "INPUT", "INTEGRATED", "IRS", "KEYBOARD COVER", "KNOB", "LAMP", "LAN CABLE", "LAVATORY", 
+                "LDG", "LENS", "LEVER", "LIGHT", "LIQUID", "LIQUID COOLING", "LWR", "MASK", "MCU", "MFP", "MIRROR", 
+                "MOTOR", "MOUNT", "MSG", "NAV", "NAV LT", "NITROGEN", "NLG", "NOSE", "NOSE LANDING GEAR", "NOZZLE", 
+                "NUT", "OIL", "OIL FILTER", "OIL LEVEL", "ORIFICE", "OUTLET", "OVEN", "OXYGEN", "PACK FCV", "PAD", 
+                "PANEL", "PB", "PB-SW", "PIPE", "PISTON", "PLACARD", "PLUG", "PRED W/S", "PRESS", "PRESSURE", 
+                "PRIM", "PRINTER", "PROBE", "PRSOV", "PTT", "PUMP", "RA", "RAD ALT", "RADAR", "RADOME", "RAM FAN", 
+                "RECIRC", "REGUL", "RELAY", "RESERVOIR", "RIB", "RIVET", "ROD", "ROTARY", "RUDDER", "RUDDER PEDAL", 
+                "SATCOM", "SATVOICE", "SCREW", "SEAL", "SEAT", "SELECTOR", "SENSOR", "SHAFT", "SHOULDER HARNESS", 
+                "SINK", "SKIN", "SLAT", "SLATS TIP BRK", "SLIDING TABLE", "SOLENOID", "SOURCE", "SPOILER", "SPRING", 
+                "STABILIZER", "STRAP", "STROBE LT", "STRUCTURAL", "SUNSHADE", "SUNVISOR", "SUPPORT", "SURV", "SW", 
+                "SWITCH", "TAB", "TAIL", "TAIL CONE", "TANK", "TAT", "TAXI LT", "TERRAIN", "TIP", "TIRE", "TOILET", 
+                "TRAFFIC", "TRANSMITTER", "TRIM AIR", "TUBE", "UPR", "VALVE", "VANE", "VENT", "VENT SKIN VALVE", "VHF", 
+                "VLV", "VOR", "WASTE TK", "WATER", "WEATHER RADAR SYS", "WHEEL", "WIFI", "WINDOW", 
+                "WINDSHEAR PREDICTIVE", "WINDSHIELD", "WING", "WIPER", "WXR", "WXR ANT", "XPDR"
+            ],
+            
+            // ทีม 2: อาการเสียและสถานะผิดปกติ
+            "Symptom": [
+                "ABNORMAL", "ACTUATOR", "AUTO", "AVIONIC", "AVNCS", "BAD", "BENT", "BIRD STRIKE", "BLINKING", 
+                "BLOCKED", "BRIGHT", "BROKEN", "BURNT", "CAUTION", "CLOGGED", "CLOSE", "COLD", "CRACKED", 
+                "DAMAGE", "DEGRADED", "DIM", "DIRTY", "DISC", "DISCHARGE", "DISCONNECT", "DISCREPANCY", 
+                "FADED", "FAIL", "FAULT", "FLASHING", "FLICKER", "FLUCTUATE", "HIGH", "HEATG", "HIGH VIB", "HOT", 
+                "IDENTIFIER", "INCORRECT", "INOP", "INPUT", "INTEGRATED", "INTERFERENCE", "INTERMITTENT", 
+                "JAMM", "LEAK", "LOCKED", "LONG TERM", "LOOSE", "LOST", "LOUD", "LOUD NOISE", "LOW", 
+                "MISSING", "MSG", "NEARLY EXPIRE", "NO LAND", "NOISE", "NORM", "NOT AVAIL", "NOT DROP", 
+                "NOT ILLUM", "OBSTRUCTED", "OIL CHIP", "OUT", "OVERHEAT", "PEEL OFF", "PEELED OFF", "POOR", 
+                "PRESS", "PRESS LO", "PRESSURE", "QUIET", "RECIRC", "REDUNDANCY", "REGUL", "SHORT TERM", 
+                "SHOW AMBER", "SHUTDOWN", "SINGLE", "SLOW", "SMELL", "SMOKE", "SOUND", "SPOOF", 
+                "STRANGE SOUND", "STUCK", "TEMP OFF LIGHT ILLUM", "TOO COLD", "TORN OFF", "UNABLE TO ACCESS", 
+                "UNABLE TO ADJUST", "UNABLE TO ALIGN", "UNABLE TO CONTROL", "UNABLE TO FLUSH", "UNABLE TO LOCK", 
+                "UNABLE TO OPEN", "UNABLE TO PRINT", "UNABLE TO RECEIVE", "UNABLE TO SEND", "UNABLE TO TRANSMIT", 
+                "UNABLE TO TURN", "UNABLE TO TURN OFF", "UNABLE TO TURN ON", "UNABLE TO USE", "UNSERVICEABLE", 
+                "UNUSUAL", "VIBRATION", "WAS USED", "WEIRD", "WORN OUT", "WORSE", "WRONG"
+            ],
+
+            // ทีม 3: การจัดการและการกระทำของช่าง
+            "Action": [
+                "ADJUSTED", "CORRECTED", "EXPECT", "PASS", "REVISED", "SEARCH", "SERVICING", "START", "SUSPECT", 
+                "SUSPECTED", "UPDATE", "USED", "VERIFICATION"
+            ],
+
+            // ทีม 4: เหตุการณ์และปัจจัยภายนอก
+            "Event": [
+                "BIRD", "BIRD STRIKE", "BIRDSTRIKE", "LIGHTNING", "LIGHTNING STRIKE", "STRIKE"
+            ],
+
+            // ทีม 5: เอกสาร สัมภาระ และการดำเนินการ
+            "Operation": [
+                "BULK", "COMP", "ETOPS", "FC", "FH", "LIVE CRAB", "LIVE FISH", "LOGBOOK", "SEAFOOD", "SPARE", 
+                "TECH LOG", "WET CARGO"
+            ],
+
+            // ทีม 6: ตำแหน่ง (Location เดิม)
+            "Location": [
+                "AFT", "BOTTOM", "CAB", "CABIN", "CAPT", "CENTER", "CKPT", "COCKPIT", "CTR", "ENG1", "ENG2", 
+                "FO", "FRONT", "FWD", "INBD", "INBOARD", "L", "L/H", "LEFT", "LH", "LOWER", "LWR", "MAIN", 
+                "MID", "OUTBD", "OUTBOARD", "PACK BAY", "POS", "R", "R/H", "REAR", "RH", "RIGHT", 
+                "SIDE", "TAIL CONE", "TOP", "UPPER", "UPR", "ZONE"
+            ]
         };
+
+        // --- 2. L2 SUMMARY MAPPING RULES (อิงจากคำที่สกัดได้) ---
+        const l2MappingRules = [
+            // --- ATA 21 ---
+            { component: ["CAB", "AUTO", "CTL"], symptom: "PRESS", l2Summary: "DM: CAB PRESS AUTO CTL SYS" },
+            { component: ["AIR", "CPRSR"], symptom: "DISPLAY", location: "CABIN", l2Summary: 'EICAS MSG "CABIN AIR CPRSR" DISPLAYED' },
+            { component: ["PACK FCV", "UPR"], symptom: "MSG", l2Summary: 'EICAS MSG "PACK FCV UPR" DISPLAYED' },
+            { component: ["PACK FCV", "LWR"], symptom: "MSG", l2Summary: 'EICAS MSG "PACK FCV LWR" DISPLAYED' },
+            { component: ["TRIM AIR", "PRSOV"], symptom: "DISPLAY", l2Summary: 'EICAS MSG "TRIM AIR PRSOV" DISPLAYED' },
+            { component: ["TRIM AIR", "PRSOV"], symptom: "MSG", l2Summary: 'EICAS MSG "TRIM AIR PRSOV" DISPLAYED' },
+            { component: "TRIM AIR", symptom: "FAULT", l2Summary: "TRIM AIR SYSTEM FAULT" },
+            { component: ["AIR", "CLG"], symptom: "DISPLAY | RECIRC | INTEGRATED", l2Summary: 'EICAS MSG "INTEGRATED CLG RECIRC AIR" DISPLAYED' },
+            
+            // --- ATA 23 ---
+            { component: ["SATCOM"], symptom: "FAULT", l2Summary: "DM : COM SATCOM FAULT" },
+            { component: ["DATALINK", "COM HF"], symptom: "", l2Summary: "DM : COM HF DATALINK" },
+            { component: ["COM HF"], symptom: "FAULT", l2Summary: "DM : COM HF DATALINK" },
+            { component: ["DATALINK"], symptom: "FAULT", l2Summary: "DATALINK FAULT" },
+            { component: ["EICAS", "SATCOM"], symptom: "MSG | DISPLAY", l2Summary: 'EICAS STAT MSG "SATCOM SYS" DISPLAY' },
+
+
+            // --- ATA 34 ---
+            { component: ["ELEC","GEN","VALVE"], symptom: "DISPLAY", l2Summary: 'EICAS MSG "ELEC GEN AIR/OIL VALVE" DISPLAYED' },
+            
+            // --- ATA 34 ---
+            { component: "GPS", symptom: "FAULT", l2Summary: "GPS SYSTEM FAULT" },
+            { component: "RAD ALT", symptom: "FAULT", l2Summary: "RADIO ALTIMETER FAULT" },
+            { component: ["A-ICE", "PROBE"], symptom: "HEATG", l2Summary: "PROBE HEATER FAULT" },
+            // --- ATA 32 ---
+            { component: "TIRE", symptom: "LOW", l2Summary: "TIRE PRESSURE LOW" }
+        ];
+
+        // FUZZY CONFIG: Combined master list
+        const masterFuzzyWords = [
+            ...wordCategories.Component, 
+            ...wordCategories.Symptom,
+            ...wordCategories.Action,
+            ...wordCategories.Event,
+            ...wordCategories.Operation,
+            ...wordCategories.Location
+        ];
 
         const flightPhases = {
             "TAKEOFF": ["TAKEOFF", "T/O", "TO", "LIFT OFF"],
@@ -406,12 +850,13 @@
         const ataDescriptions = { "00": "Product - General", "05": "Scheduled/unscheduled maintenance", "06": "Dimensions and Areas", "07": "Lifting and Shoring", "08": "Leveling and weighing", "09": "Towing and Taxiing", "10": "Parking, Mooring, Storage", "11": "Placards and Markings", "12": "Servicing", "20": "Standard Practices - Airframe", "21": "Air Conditioning", "22": "Auto Flight", "23": "Communications", "24": "Electrical Power", "25": "Equipment/Furnishings", "26": "Fire Protection", "27": "Flight Controls", "28": "Fuel", "29": "Hydraulic Power", "30": "Ice and Rain Protection", "31": "Indicating/Recording Systems", "32": "Landing Gear", "33": "Lights", "34": "Navigation", "35": "Oxygen", "36": "Pneumatic", "38": "Water/Waste", "42": "Integrated Modular Avionics", "44": "Cabin Systems", "45": "Central Maintenance System", "46": "Information Systems", "47": "Inert Gas System", "49": "Airborne Auxiliary Power", "50": "Cargo/Accessory Compartments", "51": "Standard Practices - Structures", "52": "Doors", "53": "Fuselage", "54": "Nacelles / Pylons", "55": "Stabilizers", "56": "Windows", "57": "Wings", "70": "Standard Practices - Engine", "71": "Power Plant", "72": "Engine", "73": "Engine Fuel and Control", "74": "Ignition", "75": "Air", "76": "Engine Controls", "77": "Engine Indicating", "78": "Exhaust", "79": "Oil", "80": "Starting", "91": "Air Vehicle Wiring" };
 
         let rawData = [], processedData = [], currentFilteredData = [];
+        let allAvailableCols = []; 
         let visibleColumns = new Set();
         let activeDropdown = null;
         let currentFleetLimit = 10;
         let currentTrendFreq = 'Day'; // Default frequency
         
-        // V11.6 Pagination Globals (Preserved)
+        // V11.6 Pagination Globals
         let currentPage = 1;
         const rowsPerPage = 2000;
         let currentRenderData = []; 
@@ -421,36 +866,449 @@
         let heatmapDataExport = [];
         let sankeyDataExport = [];
         
-        // --- AUTO LOAD LOGIC ---
-        window.onload = function() {
-            // Start fetching data immediately
-            fetch('./data.csv')
-                .then(response => {
-                    if (!response.ok) throw new Error("Could not find data.csv");
-                    return response.text();
-                })
-                .then(csvText => {
-                    Papa.parse(csvText, {
-                        header: true,
-                        skipEmptyLines: true,
-                        complete: res => {
-                            rawData = res.data;
-                            if (rawData.length > 0) {
-                                analyzeData();
-                                document.getElementById('loading-screen').classList.add('hidden');
-                                document.getElementById('dashboard-ui').classList.remove('hidden');
-                            } else {
-                                throw new Error("CSV file is empty");
-                            }
+        // GLOBAL FUZZY STATE
+        let globalFuzzyMap = {}; 
+        let currentFuzzySuggestions = []; 
+        
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        
+        // --- 2. EVENT LISTENERS ---
+        dropZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', e => { if(e.target.files.length) startProcessing(e.target.files[0]); });
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('active'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('active'));
+        dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('active'); if(e.dataTransfer.files.length) startProcessing(e.dataTransfer.files[0]); });
+
+        function startProcessing(file) {
+            document.getElementById('upload-section').classList.add('hidden');
+            document.getElementById('loading-screen').classList.remove('hidden');
+            setTimeout(() => { processFile(file); }, 100);
+        }
+
+        function processFile(file) {
+            Papa.parse(file, {
+                header: true, skipEmptyLines: true,
+                complete: res => {
+                    rawData = res.data;
+                    analyzeData();
+                    document.getElementById('loading-screen').classList.add('hidden');
+                    document.getElementById('dashboard-ui').classList.remove('hidden');
+                    document.getElementById('fuzzy-trigger').classList.remove('hidden'); // Show Data Prep Trigger
+                    
+                    // สั่งสแกนทันทีที่โหลดข้อมูลเสร็จ
+                    runFuzzyMatching();
+                }
+            });
+        }
+
+        // --- NEW: DATA PREP MODAL LOGIC ---
+        function toggleFuzzySidebar() {
+            const modal = document.getElementById('fuzzy-modal');
+            modal.classList.toggle('hidden');
+            modal.classList.toggle('flex');
+            
+            // Render the master vocabulary list when the modal is opened
+            if (!modal.classList.contains('hidden')) {
+                renderMasterVocabulary();
+                // Ensure Master Vocab tab is active by default
+                if (document.getElementById('modal-tab-vocab').classList.contains('hidden') && document.getElementById('modal-tab-audit').classList.contains('hidden')) {
+                    switchModalTab('vocab');
+                }
+            }
+        }
+
+        // Modal Tab Switching
+        function switchModalTab(tabId) {
+            const tabs = ['vocab', 'audit'];
+            
+            tabs.forEach(id => {
+                const content = document.getElementById(`modal-tab-${id}`);
+                const btn = document.getElementById(`modal-tab-btn-${id}`);
+                
+                if (content) {
+                    content.classList.add('hidden');
+                    if (id === 'audit') content.classList.remove('flex'); // Remove flex when hidden to hide layout
+                }
+                if (btn) {
+                    btn.classList.remove('border-purple-600', 'text-purple-700');
+                    btn.classList.add('border-transparent', 'text-gray-500');
+                }
+            });
+            
+            const targetTab = document.getElementById(`modal-tab-${tabId}`);
+            const targetBtn = document.getElementById(`modal-tab-btn-${tabId}`);
+            
+            if (targetTab) {
+                targetTab.classList.remove('hidden');
+                if (tabId === 'audit') targetTab.classList.add('flex'); // Re-add flex for audit layout
+            }
+            if (targetBtn) {
+                targetBtn.classList.add('border-purple-600', 'text-purple-700');
+                targetBtn.classList.remove('border-transparent', 'text-gray-500');
+            }
+
+            // ถ้ากดเข้าแท็บ Audit ให้รันระบบสร้างตาราง+กราฟทันที
+            if (tabId === 'audit') {
+                renderAuditTab();
+            }
+        }
+
+        function renderMasterVocabulary() {
+            // Helper function to build list HTML
+            const renderList = (elementId, array, countId) => {
+                document.getElementById(countId).innerText = array.length;
+                let html = '<ul class="divide-y divide-gray-100">';
+                // Sort alphabetically before rendering
+                [...array].sort().forEach(word => {
+                    html += `<li class="py-1.5 px-3 hover:bg-gray-100 text-gray-700 rounded transition">${word}</li>`;
+                });
+                html += '</ul>';
+                document.getElementById(elementId).innerHTML = html;
+            };
+
+            renderList('list-comp', wordCategories.Component, 'count-comp');
+            renderList('list-symp', wordCategories.Symptom, 'count-symp');
+            renderList('list-act', actionKeywords, 'count-act');
+        }
+
+        // Lightweight JS Equivalent of Python's thefuzz (Levenshtein Distance)
+        function calculateSimilarity(s1, s2) {
+            let t1 = s1.replace(/\s+/g, '').toUpperCase();
+            let t2 = s2.replace(/\s+/g, '').toUpperCase();
+            if (t1 === t2) return 100;
+            if (t1.length === 0 || t2.length === 0) return 0;
+            
+            let matrix = [];
+            for (let i = 0; i <= t2.length; i++) matrix[i] = [i];
+            for (let j = 0; j <= t1.length; j++) matrix[0][j] = j;
+            
+            for (let i = 1; i <= t2.length; i++) {
+                for (let j = 1; j <= t1.length; j++) {
+                    if (t2.charAt(i-1) === t1.charAt(j-1)) {
+                        matrix[i][j] = matrix[i-1][j-1];
+                    } else {
+                        matrix[i][j] = Math.min(
+                            matrix[i-1][j-1] + 1, // substitution
+                            matrix[i][j-1] + 1,   // insertion
+                            matrix[i-1][j] + 1    // deletion
+                        );
+                    }
+                }
+            }
+            let distance = matrix[t2.length][t1.length];
+            let maxLength = Math.max(t1.length, t2.length);
+            return Math.max(0, Math.round((1 - (distance / maxLength)) * 100));
+        }
+
+        // Run silently in background without UI
+        function runFuzzyMatching() {
+            const threshold = 77; // Fixed Threshold as requested
+            const stopWords = new Set(["THE","AND","TO","OF","IN","IS","FOR","WITH","ON","AT","FROM","BY","NAME","AUTH","NO","DATE","TIME","REF","AMM","TASK","REV","ACTION","CHECKED","NOTED","FOUND","HAS","WAS","MSG"]);
+            
+            setTimeout(() => {
+                let unknownWords = new Set();
+                
+                processedData.forEach(row => {
+                    if(row.category !== 'Tech') return;
+                    let txt = row.cleanComp;
+                    if(!txt) return;
+                    
+                    const words = txt.replace(/[^a-zA-Z0-9\/\-\s]/g, ' ').toUpperCase().split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w) && isNaN(w));
+                    
+                    words.forEach(w => {
+                        if (!masterFuzzyWords.includes(w) && !globalFuzzyMap[w]) {
+                            unknownWords.add(w);
                         }
                     });
-                })
-                .catch(error => {
-                    const errDiv = document.getElementById('error-message');
-                    errDiv.classList.remove('hidden');
-                    errDiv.innerHTML = `Error: ${error.message}<br><br>Please make sure you have a file named 'data.csv' uploaded in the same GitHub repository.`;
                 });
-        };
+
+                currentFuzzySuggestions = [];
+
+                unknownWords.forEach(badWord => {
+                    let bestMatch = "";
+                    let bestScore = 0;
+                    
+                    masterFuzzyWords.forEach(masterWord => {
+                        let score = calculateSimilarity(badWord, masterWord);
+                        if(score > bestScore) {
+                            bestScore = score;
+                            bestMatch = masterWord;
+                        }
+                    });
+
+                    if(bestScore >= threshold && bestScore < 100) { 
+                        currentFuzzySuggestions.push({ original: badWord, suggested: bestMatch, score: bestScore });
+                    }
+                });
+
+                currentFuzzySuggestions.sort((a,b) => b.score - a.score);
+            }, 50);
+        }
+
+        // --- NEW: สมองส่วนกลางสำหรับประเมิน L2 Summary รองรับ AND / OR ---
+        function evaluateL2Summaries(compText, actText) {
+            const upperComp = (compText || "").toUpperCase();
+            const upperAct = (actText || "").toUpperCase();
+            const fullSearchTxt = upperComp + " " + upperAct; 
+            
+            const l2Summaries = [];
+            
+            const checkCondition = (condition) => {
+                if (!condition) return true;
+                
+                let andGroups = [];
+                if (Array.isArray(condition)) {
+                    andGroups = condition;
+                } else if (typeof condition === 'string' && condition.trim() !== '') {
+                    // ถ้าระบุเป็น string และใช้ลูกน้ำ (แต่ไม่มี |) ให้ถือว่าเป็น AND แบบเก่า
+                    if (condition.includes(',') && !condition.includes('|')) {
+                        andGroups = condition.split(',');
+                    } else {
+                        andGroups = [condition];
+                    }
+                } else {
+                    return true;
+                }
+
+                // ทุกเงื่อนไขใน Array ต้องเป็นจริง (AND)
+                return andGroups.every(group => {
+                    // ในแต่ละเงื่อนไข สามารถใช้ | เพื่อแบ่งเป็น OR ได้
+                    const orTerms = String(group).split('|').map(s => s.trim()).filter(s => s);
+                    if (orTerms.length === 0) return true;
+                    
+                    // เจอคำใดคำหนึ่งถือว่าผ่าน (OR)
+                    return orTerms.some(term => fullSearchTxt.includes(term.toUpperCase()));
+                });
+            };
+
+            l2MappingRules.forEach(rule => {
+                const compMatch = checkCondition(rule.component);
+                const sympMatch = checkCondition(rule.symptom);
+                const locMatch = checkCondition(rule.location);
+
+                if (compMatch && sympMatch && locMatch) {
+                    // ป้องกัน rule ว่างเปล่า
+                    if ((rule.component || rule.symptom || rule.location) && !l2Summaries.includes(rule.l2Summary)) {
+                        l2Summaries.push(rule.l2Summary);
+                    }
+                }
+            });
+
+            return l2Summaries;
+        }
+
+        // NEW: ฟังก์ชันสร้างตารางและกราฟสำหรับหน้า Audit Trail
+        function renderAuditTab() {
+            const stopWords = new Set(["THE","AND","TO","OF","IN","IS","FOR","WITH","ON","AT","FROM","BY","NAME","AUTH","NO","DATE","TIME","REF","AMM","TASK","REV","ACTION","CHECKED","NOTED","FOUND","HAS","WAS","MSG"]);
+            const phraseCounts = {};
+            const auditRows = [];
+
+            // ตรวจสอบข้อมูลทั้งหมดที่เป็น Tech
+            const techData = currentFilteredData.filter(d => d.category === 'Tech');
+
+            techData.forEach(row => {
+                let txt = row['Complaint Text'] || "";
+                if(!txt) return;
+
+                const cleanTxt = txt.replace(/(Name\s*:|Auth\s*no\.?\s*:|Created\s*by\s*:|Action\s*STA\s*:|\-{3,})[\s\S]*/gi, "");
+                const upperTxt = cleanTxt.toUpperCase();
+
+                const foundSymp = [];
+                const foundComp = [];
+                const rowWordsFound = new Set(); // ป้องกันการนับคำซ้ำซ้อนในประโยคเดียวกันบนกราฟ
+
+                // 1. สแกนหาคำศัพท์แบบตรงตัว (รองรับกลุ่มคำแบบ Multi-word เช่น "AUTO CTL")
+                masterFuzzyWords.forEach(mw => {
+                    // หลีกเลี่ยง Regex แตกด้วยการ Escape ตัวอักษรพิเศษ
+                    const escapedMw = mw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    if (new RegExp(`\\b${escapedMw}\\b`, 'i').test(upperTxt)) {
+                        rowWordsFound.add(mw);
+                        
+                        const isSymp = wordCategories.Symptom.includes(mw);
+                        const item = { master: mw, original: mw, score: 100 };
+                        
+                        if (isSymp) {
+                            if (!foundSymp.some(x => x.master === mw)) foundSymp.push(item);
+                        } else {
+                            // ให้คำทั้งหมดที่เหลือ(รวม Component, Location, Event ฯลฯ) อยู่ใน foundComp เพื่อแสดงใน Audit
+                            if (!foundComp.some(x => x.master === mw)) foundComp.push(item);
+                        }
+                    }
+                });
+
+                // 2. สแกนแบบ Fuzzy สำหรับคำเดี่ยวๆ ที่เหลือ
+                const words = upperTxt.replace(/[^A-Z0-9\/\-\s]/g, ' ').split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w) && isNaN(w));
+
+                words.forEach((w) => {
+                    // ถ้าหาเจอแบบตรงตัวไปแล้วข้ามเลย
+                    if (rowWordsFound.has(w)) return;
+
+                    let matchedMaster = null;
+                    let matchScore = 0;
+
+                    // ถ้าระบบพบว่าคำนี้ถูก Map ไว้ด้วย Fuzzy Mapping (User Saved)
+                    if (globalFuzzyMap[w]) {
+                        matchedMaster = globalFuzzyMap[w];
+                        matchScore = calculateSimilarity(w, matchedMaster); // คำนวณ%ให้เห็นสดๆ
+                    }
+                    // ดึง % อัตโนมัติจากหน้าต่างสแกน โดยไม่ต้องรอ Save (เกณฑ์ >= 77%)
+                    else {
+                        const suggestion = currentFuzzySuggestions.find(s => s.original === w);
+                        if (suggestion) {
+                            matchedMaster = suggestion.suggested;
+                            matchScore = suggestion.score;
+                        }
+                    }
+
+                    // ถ้าเจอคำเข้าข่ายให้แยกเป็น Symptom หรือ Component
+                    if (matchedMaster && !rowWordsFound.has(matchedMaster)) {
+                        rowWordsFound.add(matchedMaster);
+
+                        const isSymp = wordCategories.Symptom.includes(matchedMaster);
+                        const item = { master: matchedMaster, original: w, score: matchScore };
+                        
+                        if (isSymp) foundSymp.push(item);
+                        else foundComp.push(item);
+                    }
+                });
+
+                // ดึงค่า L2 Summary ที่คำนวณไว้แล้วตั้งแต่ analyzeData มาใช้เลย (หรือประเมินใหม่จากสมองส่วนกลาง)
+                const finalL2Summaries = row.l2SummariesArr || evaluateL2Summaries(row.cleanComp, row['Activity Text']);
+
+                // เก็บลงตาราง (โชว์ทุกแถวแม้จะไม่มีคำก็ให้มันใส่ขีด -)
+                auditRows.push({
+                    acreg: row.ACREG || '-',
+                    ata: row['Main ATA'] || row.ataLabel || '-',
+                    date: row['Complaint Date'] || '-',
+                    noti: row['Notification'] || '-',
+                    text: cleanTxt,
+                    symptoms: foundSymp,
+                    components: foundComp,
+                    l2Summaries: finalL2Summaries // L2 Summary Standards
+                });
+
+                // นำคำที่เจอแบบ Unique ไปนับลงตารางสรุป
+                rowWordsFound.forEach(masterWord => {
+                    phraseCounts[masterWord] = (phraseCounts[masterWord] || 0) + 1;
+                });
+            });
+
+            // 1. วาดตาราง Word Frequency สรุปด้านซ้าย
+            const sortedCounts = Object.entries(phraseCounts).sort((a,b) => b[1] - a[1]);
+            let summaryHtml = '';
+            
+            if (sortedCounts.length === 0) {
+                summaryHtml = '<tr><td colspan="2" class="text-center py-6 text-gray-400 font-bold">No dictionary words found</td></tr>';
+            } else {
+                sortedCounts.forEach(([word, count]) => {
+                    // แยกสีกรอบของคำศัพท์ว่าเป็น Symptom หรือ Component
+                    let badgeClass = "bg-gray-100 text-gray-700";
+                    if (wordCategories.Symptom.includes(word)) badgeClass = "bg-rose-100 text-rose-800";
+                    else if (wordCategories.Component.includes(word)) badgeClass = "bg-indigo-100 text-indigo-800";
+                    
+                    summaryHtml += `
+                        <tr class="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0">
+                            <td class="px-4 py-2 font-bold text-xs"><span class="${badgeClass} px-2 py-0.5 rounded shadow-sm">${word}</span></td>
+                            <td class="px-4 py-2 text-center font-bold text-gray-700 text-xs">${count}</td>
+                        </tr>
+                    `;
+                });
+            }
+            const summaryTbody = document.getElementById('audit-summary-tbody');
+            if(summaryTbody) {
+                summaryTbody.innerHTML = summaryHtml;
+            }
+
+            // 2. วาดตาราง Audit Trail
+            let tbodyHtml = '';
+            
+            // นำแถวที่มีการจับคู่คำศัพท์ขึ้นมาก่อน เพื่อให้เห็นการทำงานของระบบ
+            auditRows.sort((a,b) => (b.symptoms.length + b.components.length) - (a.symptoms.length + a.components.length));
+            
+            auditRows.slice(0, 1000).forEach((r, idx) => { // Limit แสดงผล 1000 แถวเพื่อไม่ให้ค้าง
+                let highlightedText = r.text;
+                
+                // ไฮไลท์คำที่ตรวจเจอใน Complaint Text แบบชัดเจน
+                const allFound = [...r.symptoms, ...r.components];
+                allFound.forEach(item => {
+                    const regex = new RegExp(`\\b${item.original}\\b`, 'gi');
+                    // ใช้ CSS Class ไฮไลท์เดิม (เล็กเท่าเดิมตัวอักษรสีดำ) แต่แยกสีพื้นหลังตาม %
+                    const bgClass = item.score === 100 ? 'bg-yellow-200' : 'bg-orange-400';
+                    highlightedText = highlightedText.replace(regex, `<span class="${bgClass} text-black px-1 rounded font-bold">${item.original}</span>`);
+                });
+
+                // ฟังก์ชันสำหรับจัดรูปคอลัมน์ Symptom และ Component ให้เป็น Badge สวยงาม
+                const renderCell = (arr, type) => {
+                    if (arr.length === 0) return '<div class="text-center text-gray-400">-</div>';
+                    return arr.map(item => {
+                        let scoreClass = item.score === 100 ? 'text-emerald-600' : 'text-amber-500';
+                        let textColor = type === 'symp' ? 'text-rose-700' : 'text-indigo-700';
+                        return `<div class="mb-1.5 flex items-center justify-between bg-white px-2 py-1 rounded border shadow-sm">
+                                    <span class="font-bold ${textColor}">${item.master}</span> 
+                                    <span class="${scoreClass} font-bold text-[10px] bg-gray-50 px-1.5 py-0.5 rounded ml-2">${item.score}%</span>
+                                </div>`;
+                    }).join('');
+                };
+
+                // NEW: ฟังก์ชันสำหรับเรนเดอร์ L2 Summary Badge
+                const renderL2SummaryCell = (arr) => {
+                    if (arr.length === 0) return '<div class="text-center text-gray-400">-</div>';
+                    return arr.map(text => {
+                        return `<div class="mb-1.5 flex items-center justify-center bg-white px-2 py-1.5 rounded border border-teal-200 shadow-sm">
+                                    <span class="font-bold text-teal-700 text-[10px] text-center uppercase tracking-wide">${text}</span> 
+                                </div>`;
+                    }).join('');
+                };
+
+                tbodyHtml += `
+                    <tr class="hover:bg-gray-50 transition-colors border-b border-gray-100">
+                        <td class="px-4 py-3 font-bold text-xs text-gray-500 text-center">${idx + 1}</td>
+                        <td class="px-4 py-3 font-bold text-xs text-gray-700">${r.acreg}</td>
+                        <td class="px-4 py-3 text-gray-500 text-xs truncate max-w-[100px]" title="${r.ata}">${r.ata}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-600">${r.date}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-600">${r.noti}</td>
+                        <td class="px-4 py-3 break-words min-w-[250px] max-w-[400px] leading-relaxed text-xs text-gray-700">${highlightedText}</td>
+                        <td class="px-3 py-2 bg-rose-50/30 border-l border-rose-100 align-top w-32">${renderCell(r.symptoms, 'symp')}</td>
+                        <td class="px-3 py-2 bg-indigo-50/30 border-l border-indigo-100 align-top w-32">${renderCell(r.components, 'comp')}</td>
+                        <td class="px-3 py-2 bg-teal-50/30 border-l border-teal-100 align-top w-40">${renderL2SummaryCell(r.l2Summaries)}</td>
+                    </tr>
+                `;
+            });
+            const auditTbody = document.getElementById('audit-tbody');
+            if(auditTbody) {
+                auditTbody.innerHTML = tbodyHtml;
+            }
+            
+            // เก็บข้อมูลเผื่อส่งออก Excel
+            window.currentAuditData = auditRows;
+        }
+
+        // NEW: ส่งออก Excel จากแท็บ Audit
+        function exportAuditData() {
+            if (!window.currentAuditData || window.currentAuditData.length === 0) {
+                alert("No audit data to export.");
+                return;
+            }
+            
+            const formatExport = (arr) => {
+                if(arr.length === 0) return '-';
+                return arr.map(item => `${item.master || item.text} (${item.score}%)`).join(', ');
+            };
+
+            const exportData = window.currentAuditData.map((r, idx) => ({
+                'No.': idx + 1,
+                'AC REG': r.acreg,
+                'Main ATA': r.ata,
+                'Complaint Date': r.date,
+                'Notification': r.noti,
+                'Original Complaint Text': r.text,
+                'Symptom (Match %)': formatExport(r.symptoms),
+                'Component (Match %)': formatExport(r.components),
+                'L2 Standard Summary': r.l2Summaries.length > 0 ? r.l2Summaries.join(', ') : '-'
+            }));
+            exportToExcel(exportData, 'Text_Mining_Audit_Trail');
+        }
 
         // --- 3. BUSINESS LOGIC (FLEET MAPPING & PARSING) ---
         function getFleetInfo(reg) {
@@ -464,10 +1322,10 @@
             if (teSeries.includes(reg)) return { model: "A330-343", type: "A330" };
             if (reg.startsWith("HS-TH")) return { model: "A350-941", type: "A350" };
             const tjSeries = ["HS-TJR", "HS-TJS", "HS-TJT", "HS-TJV", "HS-TJW"];
-            if (tjSeries.includes(reg)) return { model: "2D7ER", type: "B777" };
-            if (reg >= "HS-TKK" && reg <= "HS-TKR") return { model: "B777-3ER", type: "B777" };
-            if (reg >= "HS-TKU" && reg <= "HS-TKZ") return { model: "B777-3D7", type: "B777" };
-            if (["HS-TTA", "HS-TTB", "HS-TTC"].includes(reg)) return { model: "B777-300E", type: "B777" };
+            if (tjSeries.includes(reg)) return { model: "B777-200ER", type: "B777" };
+            if (reg >= "HS-TKK" && reg <= "HS-TKR") return { model: "B777-300ER", type: "B777" };
+            if (reg >= "HS-TKU" && reg <= "HS-TKZ") return { model: "B777-300ER", type: "B777" };
+            if (["HS-TTA", "HS-TTB", "HS-TTC"].includes(reg)) return { model: "B777-300ER", type: "B777" };
             if (reg >= "HS-TQA" && reg <= "HS-TQF") return { model: "B787-8", type: "B787" };
             if (reg >= "HS-TWA" && reg <= "HS-TWD") return { model: "B787-9", type: "B787" };
             return { model: "Unknown", type: "Unknown" };
@@ -501,33 +1359,94 @@
                 const fleetInfo = getFleetInfo(row['ACREG']);
                 
                 let fullComplaint = row['Complaint Text'] || "";
+                let fullActivity = row['Activity Text'] || "";
                 let techInfo = "";
                 let pureComplaint = fullComplaint;
+                let pureActivity = fullActivity;
+                let activityDetails = ""; // ตัวแปรสำหรับเก็บข้อมูลที่แยกออกมาใหม่
                 
-                // Regex for cleaning technician info (Rule 2: Clean Text)
-                const splitMatch = fullComplaint.match(/(Name\s*:|Auth no\s*:|Created by\s*:|\-{3,})[\s\S]*/i);
-                if (splitMatch) {
-                    techInfo = splitMatch[0].trim();
-                    pureComplaint = fullComplaint.substring(0, splitMatch.index).trim();
+                // Regex for cleaning technician info
+                // Updated Regex to handle "Auth no. :", "Action STA :", and missing spaces
+                const cleanRegex = /(Name\s*:|Auth\s*no\.?\s*:|Created\s*by\s*:|Action\s*STA\s*:|\-{3,})[\s\S]*/i;
+                
+                const compSplitMatch = fullComplaint.match(cleanRegex);
+                if (compSplitMatch) {
+                    techInfo = compSplitMatch[0].trim();
+                    pureComplaint = fullComplaint.substring(0, compSplitMatch.index).trim();
+                }
+
+                // สำหรับ Activity Text (แยกข้อความและนำไปจัดฟอร์แมตใหม่)
+                const actSplitMatch = fullActivity.match(cleanRegex);
+                if (actSplitMatch) {
+                    pureActivity = fullActivity.substring(0, actSplitMatch.index).trim();
+                    let rawExtracted = actSplitMatch[0].trim();
+                    
+                    // จัดฟอร์แมตข้อมูลโดยการปัดขึ้นบรรทัดใหม่
+                    rawExtracted = rawExtracted
+                        .replace(/(Auth\s*no\.?\s*:)/gi, '\n$1')
+                        .replace(/(Action\s*STA\s*:)/gi, '\n$1')
+                        .replace(/(DATE\s*\&\s*TIME\s*:)/gi, '\n$1')
+                        .replace(/(Name\s*:)/gi, '\n$1')
+                        .replace(/(Created\s*by\s*:)/gi, '\n$1');
+                    
+                    // ลบช่องว่างส่วนเกินและเคลียร์บรรทัดว่างให้สวยงาม
+                    activityDetails = rawExtracted.replace(/\n\s+/g, '\n').trim().replace(/^\n+/, '');
                 }
 
                 const maintStatus = getMaintenanceStatus(row['Activity Code Text']);
 
-                return {
-                    ...row,
-                    'Complaint Date': date ? formatDate(date) : row['Complaint Date'],
-                    'Complaint Text': pureComplaint,
-                    'Technician Info': techInfo,
-                    'Maintenance_Status': maintStatus, 
-                    pDate: date,
-                    quarter: q,
-                    cleanComp: cleanText(pureComplaint),
-                    category: categorize(row),
-                    ataCode: ataInfo.code,
-                    ataLabel: ataInfo.label,
-                    acModel: fleetInfo.model,
-                    acType: fleetInfo.type
-                };
+                // จัดฟอร์แมต Technician Info ให้สวยงามและขึ้นบรรทัดใหม่
+                let finalTechInfo = techInfo || row['Technician Info'] || "";
+                finalTechInfo = finalTechInfo
+                    .replace(/\s*-{3,}\s*/g, '\n') // เปลี่ยนเส้นประยาวๆ ให้เป็นการขึ้นบรรทัดใหม่
+                    .replace(/(Created\s*by\s*:)/gi, '\n$1') // บังคับให้ Created by ขึ้นบรรทัดใหม่เสมอ
+                    .replace(/(\S)\s*(Auth\s*no\.?\s*:)/gi, '$1  $2') // ขยับให้มีช่องว่าง 2 เคาะหน้าคำว่า Auth no. เพื่อความสวยงาม
+                    .replace(/\n\s+/g, '\n') // ลบช่องว่างที่อยู่ต้นบรรทัดใหม่
+                    .replace(/\n+/g, '\n')   // ลบบรรทัดว่างที่ซ้อนกัน
+                    .trim();
+
+                // สร้าง Object แถวข้อมูลใหม่ โดยควบคุมลำดับคอลัมน์ให้ Activity Text (Detail) อยู่ติดกับ Activity Text
+                let newRow = {};
+                for (let key in row) {
+                    if (key === 'Complaint Text') {
+                        newRow['Complaint Text'] = pureComplaint;
+                    } else if (key === 'Activity Text') {
+                        newRow['Activity Text'] = pureActivity;
+                        newRow['Activity Text (Detail)'] = activityDetails; // แทรกคอลัมน์ใหม่ไว้ข้างๆ
+                    } else if (key === 'Complaint Date') {
+                        newRow['Complaint Date'] = date ? formatDate(date) : row['Complaint Date'];
+                    } else if (key === 'Technician Info') {
+                        newRow['Technician Info'] = finalTechInfo;
+                    } else {
+                        newRow[key] = row[key];
+                    }
+                }
+                
+                // Fallbacks กรณีไฟล์ต้นฉบับไม่มีคอลัมน์เหล่านี้
+                if (!('Activity Text' in row)) {
+                    newRow['Activity Text'] = pureActivity;
+                    newRow['Activity Text (Detail)'] = activityDetails;
+                }
+                if (!('Technician Info' in row)) {
+                    newRow['Technician Info'] = finalTechInfo;
+                }
+
+                newRow['Maintenance_Status'] = maintStatus;
+                newRow.pDate = date;
+                newRow.quarter = q;
+                newRow.cleanComp = cleanText(pureComplaint);
+                newRow.category = categorize(row, ataInfo.code);
+                newRow.ataCode = ataInfo.code;
+                newRow.ataLabel = ataInfo.label;
+                newRow.acModel = fleetInfo.model;
+                newRow.acType = fleetInfo.type;
+
+                // --- NEW: ย้ายการสแกน L2 Summary มาคำนวณไว้ที่นี่เลย ---
+                const l2Summaries = evaluateL2Summaries(newRow.cleanComp, pureActivity);
+                newRow.l2SummariesArr = l2Summaries;
+                newRow.l2SummaryText = l2Summaries.length > 0 ? l2Summaries.join(', ') : 'General / Uncategorized';
+
+                return newRow;
             });
             // Sort by Date Ascending
             processedData.sort((a,b) => (a.pDate && b.pDate) ? a.pDate - b.pDate : 0);
@@ -535,13 +1454,21 @@
             initFilters();
             initColumnSelector(); 
             applyFilters(); 
+            
+            // Set initial history state
+            if (!history.state) {
+                history.replaceState({ view: 'overview', isDrilldown: false }, '', '#overview');
+            }
         }
 
         function drilldownView(subset, titleText) {
-            switchTab('rawdata');
+            // Push state to browser history so 'Back' button works
+            history.pushState({ view: 'rawdata', isDrilldown: true }, '', '#drilldown');
+            switchTab('rawdata', true); // Pass true to prevent double pushing
+            
             currentPage = 1; // Reset pagination
             renderRawTable(subset);
-            document.getElementById('raw-count').innerHTML = `<span class="text-blue-600 font-bold"><i class="fa-solid fa-filter mr-1"></i>Drilldown: ${titleText} (${subset.length} rows)</span> <button onclick="applyFilters()" class="ml-2 text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded text-gray-700">Reset View</button>`;
+            document.getElementById('raw-count').innerHTML = `<span class="text-blue-600 font-bold"><i class="fa-solid fa-filter mr-1"></i>Drilldown: ${titleText} (${subset.length} rows)</span> <button onclick="history.back()" class="ml-2 text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded text-gray-700"><i class="fa-solid fa-arrow-left mr-1"></i>Go Back</button>`;
         }
         
         function searchTable() {
@@ -732,8 +1659,272 @@
             renderChronic(data);
             renderMatrix(data); 
             renderProblemStatement(data);
+            
+            // NEW: Update BOTH Summary Tables
+            renderOriginalComplaintSummary(data); 
+            renderL2ComplaintSummary(data); 
+            
             renderRawTable(data);
             renderTop5Cards(data); 
+        }
+
+        // --- NEW: COMPLAINT SUMMARY RENDERER (Original Logic) ---
+        function renderOriginalComplaintSummary(data) {
+            const techData = data.filter(d => d.category === 'Tech');
+            const summaryData = {};
+
+            // Grouping Logic: ATA -> Model -> Reg
+            techData.forEach(d => {
+                const ata = d.ataLabel && d.ataLabel !== "Unknown" ? d.ataLabel : "Unknown ATA";
+                const model = d.acModel || "Unknown";
+                const reg = d.ACREG || "Unknown";
+                
+                const compDate = d['Complaint Date'] ? `<span class="text-gray-400 text-xs mr-2">[${d['Complaint Date']}]</span>` : "";
+                const compHtml = compDate + (d.cleanComp || d['Complaint Text'] || "-");
+                
+                // ดึงข้อมูล Activity มาเตรียมไว้ทำ Tooltip โชว์ตอนเอาเม้าส์ชี้
+                const actText = d['Activity Text'] || "-";
+                const actCode = d['Activity Code Text'] || "-";
+
+                if (!summaryData[ata]) summaryData[ata] = {};
+                if (!summaryData[ata][model]) summaryData[ata][model] = {};
+                if (!summaryData[ata][model][reg]) summaryData[ata][model][reg] = [];
+
+                // เก็บเป็น Object แทน String ธรรมดา เพื่อให้ดึง Activity ไปใช้ตอนสร้างตารางได้
+                summaryData[ata][model][reg].push({
+                    displayHtml: compHtml,
+                    activityText: actText,
+                    activityCode: actCode
+                });
+            });
+
+            let html = '';
+            const sortedATAs = Object.keys(summaryData).sort();
+
+            sortedATAs.forEach(ata => {
+                html += `<div class="mb-8">`;
+                html += `<h3 class="font-bold text-lg text-slate-800 mb-3 border-l-4 border-blue-500 pl-3">${ata}</h3>`;
+                html += `<div class="overflow-hidden bg-white rounded-lg shadow-sm border border-gray-200">`;
+                html += `<table class="w-full text-sm text-left">`;
+                html += `<thead class="bg-slate-50 text-gray-700 uppercase text-xs border-b border-gray-200">
+                            <tr>
+                                <th class="px-4 py-3 border-r border-gray-200 w-1/5">Aircraft Model</th>
+                                <th class="px-4 py-3 border-r border-gray-200 w-1/5">ACREG</th>
+                                <th class="px-4 py-3 w-3/5">Complaint Text</th>
+                            </tr>
+                         </thead>`;
+                html += `<tbody class="divide-y divide-gray-100">`;
+
+                const models = Object.keys(summaryData[ata]).sort();
+                models.forEach(model => {
+                    const regs = Object.keys(summaryData[ata][model]).sort();
+                    
+                    let modelRowCount = 0;
+                    regs.forEach(reg => { modelRowCount += Math.max(1, summaryData[ata][model][reg].length); });
+
+                    regs.forEach((reg, regIdx) => {
+                        const complaints = summaryData[ata][model][reg];
+                        const regRowCount = Math.max(1, complaints.length);
+
+                        complaints.forEach((compObj, compIdx) => {
+                            html += `<tr class="hover:bg-blue-50/30 transition-colors">`;
+                            if (regIdx === 0 && compIdx === 0) {
+                                html += `<td class="px-4 py-3 border-r border-b border-gray-200 font-bold text-gray-800 align-top bg-white" rowspan="${modelRowCount}">${model}</td>`;
+                            }
+                            if (compIdx === 0) {
+                                html += `<td class="px-4 py-3 border-r border-b border-gray-200 font-semibold text-blue-700 align-top bg-white" rowspan="${regRowCount}">${reg}</td>`;
+                            }
+                            
+                            // จัดเตรียมข้อมูลสำหรับ Custom Tooltip (ป้องกันข้อผิดพลาดกรณีข้อมูลไม่ใช่ String)
+                            const safeActText = String(compObj.activityText || "-").replace(/"/g, '&quot;');
+                            const safeActCode = String(compObj.activityCode || "-").replace(/"/g, '&quot;');
+                            
+                            // เปลี่ยนจาก hover เป็น Click โชว์ Tooltip ทันที และเอาไอคอนมือชี้ออก
+                            html += `<td class="px-4 py-3 text-gray-700 border-b border-gray-100 leading-relaxed cursor-pointer relative group hover:bg-blue-50" 
+                                         data-act="${safeActText}" data-code="${safeActCode}"
+                                         onclick="showActionTooltip(event, this)">
+                                         <div class="w-full truncate max-w-2xl text-wrap" style="white-space: normal;">${compObj.displayHtml}</div>
+                                     </td>`;
+                            html += `</tr>`;
+                        });
+                    });
+                });
+                html += `</tbody></table></div></div>`;
+            });
+
+            if (sortedATAs.length === 0) {
+                html = `<div class="p-8 text-center text-gray-400 font-bold flex flex-col items-center"><i class="fa-solid fa-folder-open text-4xl mb-3 opacity-50"></i>No technical data available for summary.</div>`;
+            }
+            document.getElementById('summary-original-content').innerHTML = html;
+        }
+
+        // --- NEW: COMPLAINT SUMMARY RENDERER (L2 Drilldown Logic) ---
+        function renderL2ComplaintSummary(data) {
+            const techData = data.filter(d => d.category === 'Tech');
+            const summaryData = {};
+
+            // 1. Assign L2 Summary and Group Logic: ATA -> Model -> L2 Summary -> Reg
+            techData.forEach(d => {
+                const ata = d.ataLabel && d.ataLabel !== "Unknown" ? d.ataLabel : "Unknown ATA";
+                const model = d.acModel || "Unknown";
+                const l2Text = d.l2SummaryText; // ดึงค่าที่คำนวณไว้แล้วตั้งแต่ analyzeData
+                const reg = d.ACREG || "Unknown";
+
+                if (!summaryData[ata]) summaryData[ata] = {};
+                if (!summaryData[ata][model]) summaryData[ata][model] = {};
+                if (!summaryData[ata][model][l2Text]) summaryData[ata][model][l2Text] = { regs: new Set(), count: 0 };
+
+                summaryData[ata][model][l2Text].regs.add(reg);
+                summaryData[ata][model][l2Text].count++;
+            });
+
+            // 2. Render HTML
+            let html = '';
+            const sortedATAs = Object.keys(summaryData).sort();
+
+            sortedATAs.forEach(ata => {
+                html += `<div class="mb-8">`;
+                html += `<h3 class="font-bold text-lg text-teal-800 mb-3 border-l-4 border-teal-500 pl-3">${ata}</h3>`;
+                html += `<div class="overflow-hidden bg-white rounded-lg shadow-sm border border-gray-200">`;
+                html += `<table class="w-full text-sm text-left">`;
+                html += `<thead class="bg-slate-50 text-gray-700 uppercase text-xs border-b border-gray-200">
+                            <tr>
+                                <th class="px-4 py-3 border-r border-gray-200 w-1/5">Aircraft Model</th>
+                                <th class="px-4 py-3 border-r border-gray-200 w-1/3">Standard Issue (L2 Summary)</th>
+                                <th class="px-4 py-3 border-r border-gray-200">Affected Registration</th>
+                                <th class="px-4 py-3 w-24 text-center">Count</th>
+                            </tr>
+                         </thead>`;
+                html += `<tbody class="divide-y divide-gray-100">`;
+
+                const models = Object.keys(summaryData[ata]).sort();
+                models.forEach(model => {
+                    const l2Issues = Object.keys(summaryData[ata][model]).sort((a,b) => {
+                        if (a === 'General / Uncategorized') return 1;
+                        if (b === 'General / Uncategorized') return -1;
+                        return a.localeCompare(b);
+                    });
+                    
+                    const modelRowCount = l2Issues.length;
+
+                    l2Issues.forEach((l2, l2Idx) => {
+                        html += `<tr class="hover:bg-teal-50/30 transition-colors">`;
+                        
+                        if (l2Idx === 0) {
+                            html += `<td class="px-4 py-3 border-r border-b border-gray-200 font-bold text-gray-800 align-top bg-white" rowspan="${modelRowCount}">${model}</td>`;
+                        }
+                        
+                        const isOther = l2 === 'General / Uncategorized';
+                        // ปรับแก้ให้ General / Uncategorized สามารถคลิกได้ (แสดงเป็นสีเทาแต่จะเปลี่ยนเป็นสีน้ำเงินเมื่อเอาเม้าส์ชี้)
+                        const textClass = isOther ? "font-bold text-gray-500 cursor-pointer hover:text-blue-700 hover:underline transition-colors" : "font-bold text-blue-700 cursor-pointer hover:underline";
+                        
+                        // FIX: ป้องกัน Double Quotes (") ภายในประโยค L2 ทำให้โครงสร้าง HTML พังเมื่อใส่ใน onclick
+                        const safeAta = String(ata).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                        const safeModel = String(model).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                        const safeL2 = String(l2).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                        const drillAction = `onclick="drilldownL2Summary('${safeAta}', '${safeModel}', '${safeL2}')"`;
+                        
+                        // เอาเงื่อนไขการบล็อกคลิกออก เพื่อให้คลิกเข้า Drilldown ได้ทุกบรรทัด
+                        html += `<td class="px-4 py-3 border-r border-b border-gray-200 align-top">
+                                    <span class="${textClass} flex items-center" ${drillAction} title="Click to view details">
+                                        ${!isOther ? '<i class="fa-solid fa-bolt mr-2 text-rose-500"></i>' : '<i class="fa-solid fa-list mr-2 text-gray-400"></i>'}${l2}
+                                    </span>
+                                 </td>`;
+                        
+                        const regsArr = Array.from(summaryData[ata][model][l2].regs).sort();
+                        const regsHtml = regsArr.map(r => `<span class="bg-gray-100 border border-gray-200 text-gray-700 text-[10px] font-bold px-1.5 py-0.5 rounded mr-1 mb-1 inline-block">${r}</span>`).join('');
+                        
+                        html += `<td class="px-4 py-3 border-r border-b border-gray-200 align-top">${regsHtml}</td>`;
+                        html += `<td class="px-4 py-3 border-b border-gray-200 text-center font-bold text-gray-600 align-top bg-gray-50">${summaryData[ata][model][l2].count}</td>`;
+                        html += `</tr>`;
+                    });
+                });
+
+                html += `</tbody></table></div></div>`;
+            });
+
+            if (sortedATAs.length === 0) {
+                html = `<div class="p-8 text-center text-gray-400 font-bold flex flex-col items-center"><i class="fa-solid fa-folder-open text-4xl mb-3 opacity-50"></i>No technical data available for summary.</div>`;
+            }
+
+            document.getElementById('summary-l2-content').innerHTML = html;
+        }
+
+        // Add the drilldown function globally
+        function drilldownL2Summary(ata, model, l2Text) {
+            const subset = currentFilteredData.filter(d => 
+                d.ataLabel === ata && 
+                d.acModel === model && 
+                d.l2SummaryText === l2Text && 
+                d.category === 'Tech'
+            );
+            drilldownView(subset, `L2 Summary: ${model} - ${l2Text}`);
+        }
+
+        function exportOriginalSummaryData() {
+            const techData = currentFilteredData.filter(d => d.category === 'Tech');
+            if (techData.length === 0) { alert("No data to export!"); return; }
+            
+            const exportData = techData.map(d => ({
+                'ATA Chapter': d.ataLabel,
+                'Aircraft Model': d.acModel,
+                'Registration': d.ACREG,
+                'Complaint Date': d['Complaint Date'],
+                'Complaint Text': d.cleanComp || d['Complaint Text']
+            })).sort((a,b) => {
+                if (a['ATA Chapter'] !== b['ATA Chapter']) return a['ATA Chapter'] > b['ATA Chapter'] ? 1 : -1;
+                if (a['Aircraft Model'] !== b['Aircraft Model']) return a['Aircraft Model'] > b['Aircraft Model'] ? 1 : -1;
+                return a['Registration'] > b['Registration'] ? 1 : -1;
+            });
+
+            exportToExcel(exportData, 'Complaint_Summary_Raw_Grouped');
+        }
+
+        function exportL2SummaryData() {
+            const techData = currentFilteredData.filter(d => d.category === 'Tech');
+            if (techData.length === 0) { alert("No data to export!"); return; }
+            
+            // Build same grouping logic for export
+            const summaryData = {};
+
+            techData.forEach(d => {
+                // ประมวลผลจากสมองส่วนกลางเพื่อให้ตรงกัน (ส่งแค่ Complaint Text)
+                const l2Summaries = evaluateL2Summaries(d.cleanComp);
+                d.l2SummaryText = l2Summaries.length > 0 ? l2Summaries.join(', ') : 'General / Uncategorized';
+
+                const ata = d.ataLabel && d.ataLabel !== "Unknown" ? d.ataLabel : "Unknown ATA";
+                const model = d.acModel || "Unknown";
+                const l2Text = d.l2SummaryText;
+                const reg = d.ACREG || "Unknown";
+
+                if (!summaryData[ata]) summaryData[ata] = {};
+                if (!summaryData[ata][model]) summaryData[ata][model] = {};
+                if (!summaryData[ata][model][l2Text]) summaryData[ata][model][l2Text] = { regs: new Set(), count: 0 };
+
+                summaryData[ata][model][l2Text].regs.add(reg);
+                summaryData[ata][model][l2Text].count++;
+            });
+
+            const exportArr = [];
+            Object.keys(summaryData).sort().forEach(ata => {
+                Object.keys(summaryData[ata]).sort().forEach(model => {
+                    Object.keys(summaryData[ata][model]).sort((a,b) => {
+                        if (a === 'General / Uncategorized') return 1;
+                        if (b === 'General / Uncategorized') return -1;
+                        return a.localeCompare(b);
+                    }).forEach(l2 => {
+                        exportArr.push({
+                            'ATA Chapter': ata,
+                            'Aircraft Model': model,
+                            'L2 Standard Issue': l2,
+                            'Affected Registrations': Array.from(summaryData[ata][model][l2].regs).sort().join(', '),
+                            'Total Count': summaryData[ata][model][l2].count
+                        });
+                    });
+                });
+            });
+
+            exportToExcel(exportArr, 'L2_Complaint_Summary_Grouped');
         }
 
         // --- 5. EXPORT & UTILS ---
@@ -799,21 +1990,128 @@
             exportToExcel(data, 'Top_ATA_Chapters');
         }
 
+        function runNgramAnalysis(data) {
+             // Store data for later use in ECharts rendering
+             phraseDataStore = data;
+             
+             const col = document.getElementById('ngram-col').value;
+             const stopWords = new Set(["THE","AND","TO","OF","IN","IS","FOR","WITH","ON","AT","FROM","BY","NAME","AUTH","NO","DATE","TIME","REF","AMM","TASK","REV","ACTION","CHECKED","NOTED","FOUND","HAS", "WAS", "MSG"]);
+            const phraseCounts = {};
+            data.forEach(row => {
+                let txt = row[col]; if(!txt) return;
+                txt = txt.replace(/(Name\s*:|Auth\s*no\.?\s*:|Created\s*by\s*:|Action\s*STA\s*:|\-{3,})[\s\S]*/gi, "");
+                const upperTxt = txt.toUpperCase();
+                
+                const rowWordsFound = new Set();
+
+                // 1. สแกนหาคำแบบเป๊ะๆ ก่อน
+                masterFuzzyWords.forEach(mw => {
+                    const escapedMw = mw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    if (new RegExp(`\\b${escapedMw}\\b`, 'i').test(upperTxt)) {
+                        rowWordsFound.add(mw);
+                    }
+                });
+
+                // 2. สแกนคำเดี่ยวแบบ Fuzzy
+                const words = upperTxt.replace(/[^A-Z0-9\/\-\s]/g, ' ').split(/\s+/).filter(w => w.length>2 && !stopWords.has(w) && isNaN(w));
+                words.forEach(w => {
+                    if (rowWordsFound.has(w)) return;
+                    if (globalFuzzyMap[w]) {
+                        rowWordsFound.add(globalFuzzyMap[w]);
+                    } else {
+                        const suggestion = currentFuzzySuggestions.find(s => s.original === w);
+                        if (suggestion) rowWordsFound.add(suggestion.suggested);
+                    }
+                });
+
+                rowWordsFound.forEach(masterWord => {
+                    phraseCounts[masterWord] = (phraseCounts[masterWord]||0)+1;
+                });
+            });
+            
+            const sorted = Object.entries(phraseCounts).sort((a,b)=>b[1]-a[1]).slice(0, 20);
+            
+            const ngramEl = document.getElementById('ngram-chart');
+            if(sorted.length === 0) { Plotly.newPlot('ngram-chart', [], { title: { text: 'No dictionary words found', font: { size: 14, color: '#9CA3AF' } } }, {responsive: true}); return; }
+            
+            // แยกสีแท่งกราฟตามหมวดหมู่คำศัพท์
+            const barColors = sorted.map(item => {
+                const word = item[0];
+                if (wordCategories.Symptom && wordCategories.Symptom.includes(word)) return '#E11D48'; // Rose (แดง)
+                if (wordCategories.Component && wordCategories.Component.includes(word)) return '#4F46E5'; // Indigo (น้ำเงิน)
+                if (wordCategories.Action && wordCategories.Action.includes(word)) return '#10B981'; // Emerald (เขียว)
+                return '#94A3B8'; // Slate (เทา) สำหรับคำหมวดอื่นๆ
+            });
+
+            Plotly.newPlot('ngram-chart', [{ 
+                x: sorted.map(x=>x[0]), 
+                y: sorted.map(x=>x[1]), 
+                type: 'bar', 
+                marker: {color: barColors} 
+            }], { 
+                margin: {t:20,l:30,r:10,b:100}, 
+                xaxis: {tickangle: -45} 
+            }, {responsive: true});
+            
+            // FIX: Remove old listeners first to prevent duplicates
+            ngramEl.removeAllListeners('plotly_click');
+            // FIX: Use currentFilteredData in closure to prevent ReferenceError if 'data' is stale
+            ngramEl.on('plotly_click', function(clickData){
+                const phrase = clickData.points[0].x;
+                // เจาะจง Drilldown ไปยังประโยคที่มีคำศัพท์นั้นๆ ทั้งตัวสะกดถูกและตัวที่สะกดผิดแต่เชื่อมกันอยู่
+                drilldownView(currentFilteredData.filter(d => {
+                    let text = (d[col]||"").toUpperCase();
+                    const exactMatch = new RegExp(`\\b${phrase}\\b`).test(text);
+                    const originalWords = Object.keys(globalFuzzyMap).filter(k => globalFuzzyMap[k] === phrase);
+                    const suggWords = currentFuzzySuggestions.filter(s => s.suggested === phrase).map(s => s.original);
+                    const fuzzyMatch = [...originalWords, ...suggWords].some(ow => new RegExp(`\\b${ow}\\b`).test(text));
+                    return exactMatch || fuzzyMatch;
+                }), `Phrase: "${phrase}"`);
+            });
+            
+            // Call ECharts Rendering ONLY if the tab is visible to prevent canvas errors
+            const phraseTab = document.getElementById('tab-phrase');
+            if (phraseTab && !phraseTab.classList.contains('hidden')) {
+                 renderEChartsAdvanced(data); 
+            }
+        }
+
         function exportNgramData() {
              const col = document.getElementById('ngram-col').value;
              const stopWords = new Set(["THE","AND","TO","OF","IN","IS","FOR","WITH","ON","AT","FROM","BY","NAME","AUTH","NO","DATE","TIME","REF","AMM","TASK","REV","ACTION","CHECKED","NOTED","FOUND","HAS", "WAS", "MSG"]);
             const phraseCounts = {};
             currentFilteredData.forEach(row => {
                 let txt = row[col]; if(!txt) return;
-                txt = txt.replace(/(Name\s*:|Auth no\s*:|Created by\s*:|\-{3,}).*/gi, "");
-                const words = txt.replace(/[^a-zA-Z0-9\/\-\s]/g, ' ').toUpperCase().split(/\s+/).filter(w => w.length>2 && !stopWords.has(w) && isNaN(w));
-                // LOGIC: Count rows (Unique per row)
-                const rowBigrams = new Set();
-                words.forEach(w => rowBigrams.add(w));
-                rowBigrams.forEach(bg => {
-                    phraseCounts[bg] = (phraseCounts[bg]||0)+1;
+                txt = txt.replace(/(Name\s*:|Auth\s*no\.?\s*:|Created\s*by\s*:|Action\s*STA\s*:|\-{3,})[\s\S]*/gi, "");
+                const upperTxt = txt.toUpperCase();
+                
+                const rowWordsFound = new Set();
+
+                // 1. สแกนหาคำแบบเป๊ะๆ ก่อน
+                masterFuzzyWords.forEach(mw => {
+                    const escapedMw = mw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    if (new RegExp(`\\b${escapedMw}\\b`, 'i').test(upperTxt)) {
+                        rowWordsFound.add(mw);
+                    }
+                });
+
+                // 2. สแกนคำเดี่ยวแบบ Fuzzy
+                const words = upperTxt.replace(/[^A-Z0-9\/\-\s]/g, ' ').split(/\s+/).filter(w => w.length>2 && !stopWords.has(w) && isNaN(w));
+                words.forEach(w => {
+                    if (rowWordsFound.has(w)) return;
+                    if (globalFuzzyMap[w]) {
+                        rowWordsFound.add(globalFuzzyMap[w]);
+                    } else {
+                        const suggestion = currentFuzzySuggestions.find(s => s.original === w);
+                        if (suggestion) rowWordsFound.add(suggestion.suggested);
+                    }
+                });
+
+                rowWordsFound.forEach(masterWord => {
+                    phraseCounts[masterWord] = (phraseCounts[masterWord]||0)+1;
                 });
             });
+            
             const data = Object.entries(phraseCounts).map(([k,v]) => ({ Word: k, Count: v })).sort((a,b) => b.Count - a.Count);
             exportToExcel(data, 'Smart_Text_Analysis');
         }
@@ -840,7 +2138,7 @@
              exportToExcel(data, 'Matrix_Heatmap_Source');
         }
 
-        function exportRawData() { exportToExcel(currentFilteredData, 'Full_Raw_Data'); }
+        function exportRawData() { exportToExcel(currentRenderData, 'Raw_Data_Export'); }
 
         // --- NEW EXPORT FUNCTIONS FOR ECHARTS ---
         function exportRiskMatrix() {
@@ -891,12 +2189,19 @@
             } catch(e) { return null; }
         }
 
-        function cleanText(txt) { return (txt || "").replace(/(Name\s*:|Auth no\s*:|Created by\s*:|\-{3,}).*/gi, "").trim(); }
+        function cleanText(txt) { 
+            return (txt || "").replace(/(Name\s*:|Auth\s*no\.?\s*:|Created\s*by\s*:|Action\s*STA\s*:|\-{3,})[\s\S]*/gi, "").trim(); 
+        }
         
-        function categorize(row) {
+        function categorize(row, ataCode) {
             const act = (row['Activity Code Text']||"").toUpperCase();
             const comp = (row['Complaint Text']||"").toUpperCase();
             const infoKeys = ['AUTOLAND', 'JAMMING', 'NOTED', 'FLIGHT HOURS'];
+            
+            // เพิ่มเงื่อนไข: ถ้าเป็น ATA 22, 25, 49, 50 ให้จัดเป็น Info ทันที
+            const infoATAs = ['22', '25', '49', '50'];
+            if (infoATAs.includes(ataCode)) return 'Info';
+
             if(act.includes('INFORMATION') || infoKeys.some(k => comp.includes(k))) return 'Info';
             return 'Tech';
         }
@@ -1116,10 +2421,10 @@
             const top5AC = Object.entries(acCounts).sort((a,b)=>b[1]-a[1]).slice(0, 5);
             
             const acListHtml = top5AC.map((item, idx) => `
-                <div class="flex justify-between items-center text-sm p-1 border-b border-gray-100 last:border-0">
+                <div class="flex justify-between items-center text-sm py-1.5 border-b border-gray-50 last:border-0">
                     <span class="font-semibold text-gray-700 w-6">${idx+1}.</span>
-                    <span class="text-blue-600 flex-1">${item[0]}</span>
-                    <span class="font-bold text-gray-800 bg-gray-100 px-2 rounded-full text-xs">${item[1]}</span>
+                    <span class="text-blue-600 flex-1 truncate pr-2" title="${item[0]}">${item[0]}</span>
+                    <span class="font-bold text-gray-800 bg-gray-100 px-2 py-0.5 rounded-full text-xs">${item[1]}</span>
                 </div>
             `).join('');
             document.getElementById('top5-ac-list').innerHTML = acListHtml || '<div class="text-xs text-gray-400 text-center py-4">No Data</div>';
@@ -1130,10 +2435,10 @@
             const top5ATA = Object.entries(ataCounts).sort((a,b)=>b[1]-a[1]).slice(0, 5);
 
             const ataListHtml = top5ATA.map((item, idx) => `
-                <div class="flex justify-between items-center text-sm p-1 border-b border-gray-100 last:border-0">
+                <div class="flex justify-between items-center text-sm py-1.5 border-b border-gray-50 last:border-0">
                     <span class="font-semibold text-gray-700 w-6">${idx+1}.</span>
-                    <span class="text-gray-600 flex-1 truncate" title="${item[0]}">${item[0]}</span>
-                    <span class="font-bold text-gray-800 bg-gray-100 px-2 rounded-full text-xs">${item[1]}</span>
+                    <span class="text-gray-600 flex-1 truncate pr-2" title="${item[0]}">${item[0]}</span>
+                    <span class="font-bold text-gray-800 bg-gray-100 px-2 py-0.5 rounded-full text-xs">${item[1]}</span>
                 </div>
             `).join('');
             document.getElementById('top5-ata-list').innerHTML = ataListHtml || '<div class="text-xs text-gray-400 text-center py-4">No Data</div>';
@@ -1187,7 +2492,7 @@
                 texttemplate: "%{text}", // Show value
                 hovertext: zValues.map(row => row.map((val, i) => `ATA: ${hoverTexts[i]}<br>Count: ${val}`)),
                 hovertemplate: 'Aircraft: %{y}<br>%{hovertext}<extra></extra>'
-            }], { margin: {t:30, l:100, r:30, b:100}, xaxis: { tickangle: -45, title: 'ATA System' }, yaxis: { title: 'Aircraft' } }, {responsive: true});
+            }], { margin: {t:30, l:100, r:30, b:100}, xaxis: { tickangle: -45, title: '' }, yaxis: { title: '' } }, {responsive: true});
             
             matrixEl.removeAllListeners('plotly_click');
             matrixEl.on('plotly_click', function(clickData){
@@ -1236,7 +2541,7 @@
         function setFleetLimit(limit) {
             currentFleetLimit = limit;
             renderFleetHealth(currentFilteredData);
-            const buttons = document.querySelectorAll('#fleet-chart').parentNode.querySelectorAll('button');
+            const buttons = document.getElementById('fleet-chart').parentNode.querySelectorAll('button');
             buttons.forEach(btn => {
                 if ((limit === 'ALL' && btn.innerText === 'All') || 
                     (limit === 5 && btn.innerText === 'Top 5') || 
@@ -1258,7 +2563,8 @@
             }
             const xLabels = sortedAC.map(x => x[0]);
             const fleetEl = document.getElementById('fleet-chart');
-            Plotly.newPlot('fleet-chart', [{ x: xLabels, y: sortedAC.map(x=>x[1]), type: 'bar', marker: {color: '#9333EA'} }], { margin: {t:20,l:30,r:10,b:40} }, {responsive: true});
+            // ปรับระยะ margin 'b' (bottom) จาก 40 เป็น 80 เพื่อให้มีพื้นที่แสดงชื่อทะเบียนครบถ้วน
+            Plotly.newPlot('fleet-chart', [{ x: xLabels, y: sortedAC.map(x=>x[1]), type: 'bar', marker: {color: '#8A4C9C'} }], { margin: {t:20,l:30,r:10,b:80} }, {responsive: true});
             fleetEl.removeAllListeners('plotly_click');
             fleetEl.on('plotly_click', function(clickData){ drilldownView(data.filter(d => d.ACREG === clickData.points[0].x && d.category === 'Tech'), `Aircraft: ${clickData.points[0].x}`); });
             
@@ -1303,7 +2609,7 @@
                     hovertemplate: '%{hovertext}<br>Cum %: %{y:.2f}%<extra></extra>' 
                 }
             ], { 
-                margin: {t:30,l:40,r:40,b:80}, // Adjust margins for text labels
+                margin: {t:25,l:40,r:40,b:50}, // Adjust margins for text labels
                 yaxis2: {overlaying: 'y', side: 'right', range: [0, 110], showgrid: false}, // Adjust range for labels
                 yaxis: {showgrid: false},
                 showlegend: false 
@@ -1330,10 +2636,10 @@
                 y: yLabels, x: sorted.map(x=>x[1]), type: 'bar', orientation: 'h', marker: {color: '#EF4444'},
                 hovertext: hoverTexts, hovertemplate: '%{hovertext}<br>Count: %{x}<extra></extra>'
             }], { 
-                margin: {t:0, l:140, r:10, b:30}, // Increased left margin
+                margin: {t:0, l:55, r:10, b:30}, // ปรับลด margin ซ้ายจาก 140 เหลือ 70 เพื่อลดช่องว่าง
                 yaxis: {
                     autorange:'reversed', 
-                    title: { text: 'ATA Chapter', standoff: 20 } // Added spacing
+                    tickpad: 10 // เพิ่มระยะห่างระหว่างตัวหนังสือกับแท่งกราฟ
                 } 
             }, {responsive: true});
             fcEl.removeAllListeners('plotly_click');
@@ -1346,7 +2652,8 @@
             const listEl = document.getElementById('fc-list');
             if (listEl) {
                 listEl.innerHTML = sorted.map(([label, count]) => {
-                    const safeLabel = label.replace(/'/g, "\\'");
+                    // FIX: ป้องกัน Double Quotes ในชื่อ ATA Label พังโครงสร้าง HTML
+                    const safeLabel = String(label).replace(/'/g, "\\'").replace(/"/g, '&quot;');
                     return `
                         <div class="flex justify-between items-center py-2 border-b border-gray-100 hover:bg-red-50 cursor-pointer transition" 
                              onclick="drilldownView(currentFilteredData.filter(d => d.ataLabel === '${safeLabel}'), 'ATA: ${safeLabel}')">
@@ -1358,54 +2665,24 @@
             }
         }
 
-        function runNgramAnalysis(data) {
-             // Store data for later use in ECharts rendering
-             phraseDataStore = data;
-             
-             const col = document.getElementById('ngram-col').value;
-             const stopWords = new Set(["THE","AND","TO","OF","IN","IS","FOR","WITH","ON","AT","FROM","BY","NAME","AUTH","NO","DATE","TIME","REF","AMM","TASK","REV","ACTION","CHECKED","NOTED","FOUND","HAS", "WAS", "MSG"]);
-            const phraseCounts = {};
-            data.forEach(row => {
-                let txt = row[col]; if(!txt) return;
-                txt = txt.replace(/(Name\s*:|Auth no\s*:|Created by\s*:|\-{3,}).*/gi, "");
-                const words = txt.replace(/[^a-zA-Z0-9\/\-\s]/g, ' ').toUpperCase().split(/\s+/).filter(w => w.length>2 && !stopWords.has(w) && isNaN(w));
-                const rowBigrams = new Set();
-                if(col.includes('Complaint')) { words.forEach(w => rowBigrams.add(w)); } else { words.forEach(w => rowBigrams.add(w)); }
-                rowBigrams.forEach(bg => { phraseCounts[bg] = (phraseCounts[bg]||0)+1; });
-            });
-            const sorted = Object.entries(phraseCounts).sort((a,b)=>b[1]-a[1]).slice(0, 20);
-            const ngramEl = document.getElementById('ngram-chart');
-            if(sorted.length === 0) { Plotly.newPlot('ngram-chart', [], { title: { text: 'No data found', font: { size: 14, color: '#9CA3AF' } } }, {responsive: true}); return; }
-            Plotly.newPlot('ngram-chart', [{ x: sorted.map(x=>x[0]), y: sorted.map(x=>x[1]), type: 'bar', marker: {color: '#0EA5E9'} }], { margin: {t:20,l:30,r:10,b:100}, xaxis: {tickangle: -45} }, {responsive: true});
-            
-            // FIX: Remove old listeners first to prevent duplicates
-            ngramEl.removeAllListeners('plotly_click');
-            // FIX: Use currentFilteredData in closure to prevent ReferenceError if 'data' is stale
-            ngramEl.on('plotly_click', function(clickData){
-                const phrase = clickData.points[0].x;
-                // Use currentFilteredData global for robustness
-                drilldownView(currentFilteredData.filter(d => (d[col]||"").toUpperCase().includes(phrase)), `Phrase: "${phrase}"`);
-            });
-            
-            // Call ECharts Rendering ONLY if the tab is visible to prevent canvas errors
-            const phraseTab = document.getElementById('tab-phrase');
-            if (phraseTab && !phraseTab.classList.contains('hidden')) {
-                 renderEChartsAdvanced(data); 
-            }
-        }
-        
         // --- 9. ECHARTS ADVANCED RENDERING ---
         function renderEChartsAdvanced(data) {
+            // SAFETY CHECK: ตรวจสอบว่ามีข้อมูลและกราฟพร้อมวาดหรือไม่ ป้องกัน Error ตอนสลับแท็บรัวๆ
             if (!data || data.length === 0) return;
             
-            // Safely dispose old instances to prevent conflicts
-            const ids = ['echart-heatmap', 'echart-sankey'];
-            ids.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) {
-                    const existing = echarts.getInstanceByDom(el);
-                    if (existing) existing.dispose();
-                }
+            const heatmapEl = document.getElementById('echart-heatmap');
+            const sankeyEl = document.getElementById('echart-sankey');
+
+            if (!heatmapEl || !sankeyEl) return;
+
+            // 1. SAFETY CHECK: If elements have no size, ECharts will throw "addColorStop" error
+            if (heatmapEl.clientWidth === 0 || heatmapEl.clientHeight === 0) return;
+            if (sankeyEl.clientWidth === 0 || sankeyEl.clientHeight === 0) return;
+
+            // 2. DISPOSE: Safely dispose old instances
+            [heatmapEl, sankeyEl].forEach(el => {
+                const existing = echarts.getInstanceByDom(el);
+                if (existing) existing.dispose();
             });
 
             const techData = data.filter(d => d.category === 'Tech');
@@ -1417,7 +2694,8 @@
             const matrixData = {}; // key: "PHASE|SYMPTOM" -> count
 
             techData.forEach(d => {
-                const txt = (d[compCol] || "").toUpperCase();
+                let txt = (d[compCol] || "").toUpperCase();
+
                 let phase = "UNKNOWN";
                 // Detect Phase
                 for (const [p, keywords] of Object.entries(flightPhases)) {
@@ -1455,13 +2733,25 @@
                 });
             });
 
-            const heatmapChart = echarts.init(document.getElementById('echart-heatmap'));
+            // 3. MAX VALUE SAFETY: Avoid 0 max value which breaks ECharts visualMap
+            let maxVal = Math.max(...heatmapData.map(d=>d[2]));
+            if (!isFinite(maxVal) || maxVal === 0) maxVal = 10; // Default fallback
+
+            const heatmapChart = echarts.init(heatmapEl);
             heatmapChart.setOption({
                 tooltip: { position: 'top' },
                 grid: { height: '70%', top: '10%' },
                 xAxis: { type: 'category', data: phases, splitArea: { show: true } },
                 yAxis: { type: 'category', data: topSymptoms, splitArea: { show: true } },
-                visualMap: { min: 0, max: Math.max(...heatmapData.map(d=>d[2])) || 10, calculable: true, orient: 'horizontal', left: 'center', bottom: '0%', inRange: { color: ['#fff', '#fde047', '#ef4444'] } },
+                visualMap: { 
+                    min: 0, 
+                    max: maxVal, // Use safe max value
+                    calculable: true, 
+                    orient: 'horizontal', 
+                    left: 'center', 
+                    bottom: '0%', 
+                    inRange: { color: ['#fff', '#fde047', '#ef4444'] } 
+                },
                 series: [{
                     name: 'Risk Count', type: 'heatmap', data: heatmapData,
                     label: { show: true },
@@ -1476,11 +2766,11 @@
                 
                 // Use currentFilteredData for robust filtering
                 const subset = currentFilteredData.filter(d => {
-                    const txt = (d[compCol] || "").toUpperCase();
-                    // Re-use logic: Contains Phase keywords AND Regex Match Symptom
+                    let txt = (d[compCol] || "").toUpperCase();
+                    
                     const hasPhase = flightPhases[phase].some(k => txt.includes(k));
                     const hasSymptom = new RegExp(`\\b${symptom}\\b`).test(txt);
-                    return hasPhase && hasSymptom && d.category === 'Tech'; // Ensure tech category match
+                    return hasPhase && hasSymptom && d.category === 'Tech'; 
                 });
                 drilldownView(subset, `Risk: ${phase} + ${symptom}`);
             });
@@ -1492,8 +2782,8 @@
             sankeyDataExport = []; // Clear old export
 
             techData.forEach(d => {
-                const txt = (d['Complaint Text'] || "").toUpperCase();
-                const actTxt = (d['Activity Code Text'] || "").toUpperCase(); // Scan Action from Activity Code
+                let txt = (d['Complaint Text'] || "").toUpperCase();
+                const actTxt = (d['Activity Code Text'] || "").toUpperCase(); 
 
                 // 1. Symptom
                 let sym = null;
@@ -1529,7 +2819,7 @@
                 links.push({ source: n2, target: n3, value: val });
             });
 
-            const sankeyChart = echarts.init(document.getElementById('echart-sankey'));
+            const sankeyChart = echarts.init(sankeyEl);
             sankeyChart.setOption({
                 tooltip: { trigger: 'item', triggerOn: 'mousemove' },
                 series: [{
@@ -1543,28 +2833,24 @@
             
             // SANKEY CLICK EVENT
             sankeyChart.on('click', function(params) {
-                // Use currentFilteredData for robust filtering
                 const filterData = currentFilteredData.filter(d => d.category === 'Tech');
                 
                 if (params.dataType === 'node') {
-                    // Node Click: Filter by contained string (strip prefix "Sym: ", "Part: ")
                     const name = params.name; 
-                    const keyword = name.split(': ')[1]; // "Sym: LEAK" -> "LEAK"
+                    const keyword = name.split(': ')[1];
                     const subset = filterData.filter(d => {
-                        const txt = (d['Complaint Text'] || "").toUpperCase();
+                        let txt = (d['Complaint Text'] || "").toUpperCase();
                         const actTxt = (d['Activity Code Text'] || "").toUpperCase();
                         return new RegExp(`\\b${keyword}\\b`).test(txt) || actTxt.includes(keyword) || d.Maintenance_Status === keyword;
                     });
                     drilldownView(subset, `Flow Node: ${keyword}`);
                 } else if (params.dataType === 'edge') {
-                    // Link Click: Filter by Source AND Target
                     const src = params.data.source.split(': ')[1];
                     const tgt = params.data.target.split(': ')[1];
                      const subset = filterData.filter(d => {
-                        const txt = (d['Complaint Text'] || "").toUpperCase();
+                        let txt = (d['Complaint Text'] || "").toUpperCase();
                         const actTxt = (d['Activity Code Text'] || "").toUpperCase();
                         
-                        // Check if row contains BOTH terms (either in complaint or action)
                         const hasSrc = new RegExp(`\\b${src}\\b`).test(txt) || actTxt.includes(src);
                         const hasTgt = new RegExp(`\\b${tgt}\\b`).test(txt) || actTxt.includes(tgt) || d.Maintenance_Status === tgt;
                         
@@ -1659,7 +2945,7 @@
             if(!processedData.length) return;
             const keys = Object.keys(processedData[0]);
             const ignored = ['pDate', 'cleanComp', 'cleanOp', 'ataCode'];
-            allAvailableCols = keys.filter(k => !ignored.includes(k));
+            allAvailableCols = [...new Set(keys)].filter(k => !ignored.includes(k));
             visibleColumns = new Set(allAvailableCols);
             const container = document.getElementById('col-checkboxes');
             container.innerHTML = '';
@@ -1705,7 +2991,16 @@
             }
             
             let thead = `<thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 shadow-sm z-10"><tr>`;
-            headers.forEach(h => thead += `<th class="px-4 py-3 border-b bg-gray-100 font-bold tracking-wider">${h}</th>`);
+            headers.forEach(h => {
+                // กำหนดความกว้างคอลัมน์ให้เหมาะสม
+                let wClass = "";
+                if (h === 'Complaint Text') wClass = "w-1/3 min-w-[300px]";
+                else if (h === 'Activity Text') wClass = "w-1/4 min-w-[250px]";
+                else if (h === 'Activity Code Text') wClass = "w-1/6 min-w-[200px]";
+                else if (h === 'Component Text') wClass = "w-48 min-w-[150px] max-w-[200px]"; // เพิ่มการบีบคอลัมน์ Component Text
+                
+                thead += `<th class="px-4 py-3 border-b bg-gray-100 font-bold tracking-wider ${wClass}">${h}</th>`;
+            });
             thead += `</tr></thead><tbody>`;
             
             let tbody = "";
@@ -1715,20 +3010,24 @@
                     let val = row[h];
                     if (val instanceof Date) val = formatDate(val);
                     let displayVal = val ? String(val) : "";
+                    
                     if (highlightTerm && displayVal) {
                         const regex = new RegExp(`(${highlightTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
                         displayVal = displayVal.replace(regex, '<span class="highlight-text">$1</span>');
                     }
                     
                     // Logic for column specific wrapping
-                    const wrapCols = ['Activity Code Text', 'Activity Text', 'Operation Text', 'Component Text'];
+                    const wrapCols = ['Activity Code Text', 'Activity Text', 'Activity Text (Detail)', 'Operation Text', 'Component Text', 'Complaint Text', 'Technician Info'];
                     let cellClasses = "px-4 py-2 border-b border-gray-100 align-top";
                     if (wrapCols.includes(h)) {
-                        cellClasses += " break-words max-w-[400px] min-w-[200px]"; // Added min-w to ensure readability
+                        cellClasses += " break-words whitespace-normal"; // ปรับให้ตัดคำลงบรรทัดใหม่
+                        if (h === 'Component Text') {
+                            cellClasses += " max-w-[200px]"; // บังคับบีบให้ Component Text ไม่เกิน 200px
+                        }
                     } else {
                         cellClasses += " whitespace-nowrap";
                     }
-
+                    
                     tbody += `<td class="${cellClasses}">${displayVal}</td>`;
                 });
                 tbody += `</tr>`;
@@ -1758,7 +3057,53 @@
             }
         }
 
-        function switchTab(id) {
+        function toggleFullscreen(cardId, chartId) {
+            const card = document.getElementById(cardId);
+            const chart = document.getElementById(chartId);
+            
+            if (!card || !chart) return; // Add check to prevent errors
+            
+            const icon = card.querySelector(`[onclick*="toggleFullscreen('${cardId}'"] i`);
+
+            card.classList.toggle('card-fullscreen');
+            chart.classList.toggle('chart-fullscreen');
+
+            if (card.classList.contains('card-fullscreen')) {
+                if(icon) {
+                    icon.classList.remove('fa-expand');
+                    icon.classList.add('fa-compress'); // เปลี่ยนเป็นไอคอนย่อ
+                }
+            } else {
+                 if(icon) {
+                    icon.classList.remove('fa-compress');
+                    icon.classList.add('fa-expand'); // เปลี่ยนกลับเป็นไอคอนขยาย
+                }
+            }
+
+            // สั่งให้ Plotly วาดกราฟใหม่เพื่อให้พอดีกับขนาดจอใหม่ (เช็คก่อนว่าเป็นกราฟ Plotly หรือไม่)
+            setTimeout(() => {
+                if (typeof Plotly !== 'undefined' && chart.classList.contains('js-plotly-plot')) {
+                    Plotly.Plots.resize(chart);
+                }
+            }, 50);
+        }
+
+        function switchTab(id, fromHistory = false) {
+            // Handle Browser History
+            if (!fromHistory) {
+                if (!history.state || history.state.view !== id) {
+                    history.pushState({ view: id, isDrilldown: false }, '', '#' + id);
+                }
+            }
+
+            // Restore Raw Data table to full filtered list if not in a drilldown state
+            if (id === 'rawdata' && history.state && !history.state.isDrilldown) {
+                if (currentFilteredData.length > 0 && currentRenderData !== currentFilteredData) {
+                    currentPage = 1;
+                    renderRawTable(currentFilteredData);
+                }
+            }
+
             document.querySelectorAll('.tab-content').forEach(d => d.classList.add('hidden'));
             document.getElementById(`tab-${id}`).classList.remove('hidden');
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -1779,7 +3124,7 @@
                          // Add a tiny delay to ensure container has dimensions
                          setTimeout(() => {
                              renderEChartsAdvanced(phraseDataStore);
-                         }, 50);
+                         }, 200); // Increased delay
                     }
                     
                     const echartsContainers = ['echart-heatmap', 'echart-sankey'];
@@ -1797,6 +3142,21 @@
                 const el = document.getElementById(id);
                 if(el) Plotly.Plots.resize(el);
             });
+        });
+
+        // --- 10. BROWSER HISTORY ROUTING (BACK BUTTON SUPPORT) ---
+        window.addEventListener('popstate', function(event) {
+            if (event.state && event.state.view) {
+                // Switch back to the previous tab
+                switchTab(event.state.view, true);
+                
+                // If returning to a normal tab (not a drilldown), ensure table resets
+                if (!event.state.isDrilldown && currentFilteredData.length > 0) {
+                     renderRawTable(currentFilteredData);
+                }
+            } else {
+                switchTab('overview', true);
+            }
         });
     </script>
 </body>
