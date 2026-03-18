@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aviation Maint. Intelligence (Ultimate V11.28 Auto-Load)</title>
+    <title>Aviation Maint. Intelligence (Ultimate V11.28)</title>
     
     <!-- Libraries (Standardized CDNs) -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -93,9 +93,13 @@
 </head>
 <body class="text-gray-800" onclick="closeAllDropdowns(event)">
 
-    <!-- NEW: Custom Beautiful Tooltip Container (Modified for CLICK and high z-index) -->
+    <!-- Custom Action Tooltip -->
     <div id="custom-action-tooltip" style="z-index: 10000;" class="fixed hidden transition-opacity duration-75 bg-slate-900 text-slate-200 rounded-lg shadow-2xl p-4 w-[450px] border border-slate-700">
         <button onclick="hideActionTooltip()" class="absolute top-2 right-2 text-gray-400 hover:text-white bg-slate-800 hover:bg-rose-500 rounded-full w-6 h-6 flex items-center justify-center transition-colors"><i class="fa-solid fa-times"></i></button>
+        <div class="mb-3 pr-4">
+            <span class="font-bold text-teal-400 text-[10px] uppercase tracking-wider block mb-1"><i class="fa-solid fa-bell mr-1"></i>Notification</span>
+            <div id="tt-noti" class="text-xs leading-relaxed font-semibold bg-slate-800 p-2.5 rounded border border-slate-700 shadow-inner"></div>
+        </div>
         <div class="mb-3 pr-4">
             <span class="font-bold text-blue-400 text-[10px] uppercase tracking-wider block mb-1"><i class="fa-solid fa-wrench mr-1"></i>Activity Text</span>
             <div id="tt-act-text" class="text-xs leading-relaxed whitespace-pre-wrap break-words bg-slate-800 p-2.5 rounded border border-slate-700 shadow-inner min-h-[40px] max-h-[200px] overflow-y-auto custom-scroll"></div>
@@ -113,14 +117,14 @@
                 <i class="fa-solid fa-jet-fighter-up text-2xl text-blue-400"></i>
                 <div>
                     <h1 class="text-xl font-bold tracking-wide">Maint. Intelligence</h1>
-                    <span class="text-xs text-blue-300">Ultimate V11.28 (Auto-Load Version)</span>
+                    <span class="text-xs text-blue-300">Ultimate V11.28 (Fix)</span>
                 </div>
             </div>
             <div class="hidden md:block text-xs bg-blue-800 px-3 py-1 rounded-full">Pilot Complaint Analyzer</div>
         </div>
     </nav>
 
-    <!-- NEW: Fuzzy Matching Floating Button -->
+    <!-- Fuzzy Matching Floating Button -->
     <div id="fuzzy-trigger" class="fixed top-1/2 left-0 z-40 transform -translate-y-1/2 hidden transition-all hover:pl-2">
         <button onclick="toggleFuzzySidebar()" class="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-r-xl shadow-lg border border-purple-800 border-l-0 flex flex-col items-center gap-1 group">
             <i class="fa-solid fa-wand-magic-sparkles text-xl group-hover:scale-110 transition-transform"></i>
@@ -128,9 +132,8 @@
         </button>
     </div>
 
-    <!-- UPDATED: Fullscreen Data Prep Modal -->
+    <!-- Fullscreen Data Prep Modal -->
     <div id="fuzzy-modal" class="fixed inset-0 w-full h-full bg-gray-100 z-[100] hidden flex-col animate-fade-in">
-        <!-- Header -->
         <div class="bg-slate-900 text-white p-4 px-6 flex justify-between items-center shadow-md shrink-0 border-b-4 border-purple-600">
             <div>
                 <h2 class="text-xl font-bold"><i class="fa-solid fa-wand-magic-sparkles text-purple-400 mr-3"></i>Data Preparation Studio</h2>
@@ -139,12 +142,8 @@
             <button onclick="toggleFuzzySidebar()" class="text-slate-300 hover:text-white text-3xl leading-none" title="Close Window">&times;</button>
         </div>
 
-        <!-- Body Layout -->
         <div class="flex-1 overflow-hidden flex flex-col p-6 gap-6">
-            <!-- Right Content (Tabs & Data) -->
             <div class="flex-1 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden relative">
-                
-                <!-- Inner Tabs -->
                 <div class="flex border-b border-gray-200 bg-gray-50 shrink-0">
                     <button id="modal-tab-btn-vocab" class="px-6 py-4 font-bold text-sm text-purple-700 border-b-2 border-purple-600 focus:outline-none transition-colors" onclick="switchModalTab('vocab')">
                         <i class="fa-solid fa-book-bookmark mr-2"></i>Master Vocabulary
@@ -154,15 +153,13 @@
                     </button>
                 </div>
 
-                <!-- Tab Content: Master Vocabulary -->
+                <!-- Master Vocabulary Tab -->
                 <div id="modal-tab-vocab" class="flex-1 overflow-auto custom-scroll p-6 bg-gray-50">
                     <div class="mb-4">
                         <h3 class="text-lg font-bold text-gray-800">System Dictionary</h3>
                         <p class="text-sm text-gray-500">List of authorized keywords used for text mining and Sankey flow generation.</p>
                     </div>
-                    
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100%-60px)] min-h-[400px]">
-                        <!-- Symptom Col -->
                         <div class="bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
                             <div class="bg-rose-50 border-b border-rose-100 p-3 shrink-0 flex justify-between items-center">
                                 <span class="font-bold text-rose-800"><i class="fa-solid fa-triangle-exclamation mr-2"></i>Symptom</span>
@@ -170,8 +167,6 @@
                             </div>
                             <div class="flex-1 overflow-y-auto custom-scroll p-2 text-sm text-gray-700" id="list-symp"></div>
                         </div>
-
-                        <!-- Component Col -->
                         <div class="bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
                             <div class="bg-indigo-50 border-b border-indigo-100 p-3 shrink-0 flex justify-between items-center">
                                 <span class="font-bold text-indigo-800"><i class="fa-solid fa-microchip mr-2"></i>Component</span>
@@ -179,8 +174,6 @@
                             </div>
                             <div class="flex-1 overflow-y-auto custom-scroll p-2 text-sm text-gray-700" id="list-comp"></div>
                         </div>
-
-                        <!-- Action Col -->
                         <div class="bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
                             <div class="bg-emerald-50 border-b border-emerald-100 p-3 shrink-0 flex justify-between items-center">
                                 <span class="font-bold text-emerald-800"><i class="fa-solid fa-wrench mr-2"></i>Action</span>
@@ -191,10 +184,8 @@
                     </div>
                 </div>
 
-                <!-- NEW TAB CONTENT: Mining Audit (Summary Table + Detail Table) -->
+                <!-- Mining Audit Tab -->
                 <div id="modal-tab-audit" class="hidden flex-1 overflow-hidden p-6 bg-gray-50 flex-col lg:flex-row gap-6">
-                    
-                    <!-- Summary Table Section (Left) -->
                     <div class="w-full lg:w-1/5 xl:w-64 shrink-0 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden h-full">
                         <div class="p-3 bg-white border-b border-gray-200 shrink-0">
                             <h3 class="text-sm font-bold text-gray-800"><i class="fa-solid fa-list-ol mr-2 text-purple-600"></i>Word Frequency</h3>
@@ -212,7 +203,6 @@
                         </div>
                     </div>
                     
-                    <!-- Table Section (Right) -->
                     <div class="flex-1 min-w-0 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden h-full" id="audit-trail-card">
                         <div class="p-3 bg-white border-b border-gray-200 flex justify-between items-center shrink-0">
                             <h3 class="text-sm font-bold text-gray-800"><i class="fa-solid fa-list-check mr-2 text-purple-600"></i>Text Extraction Audit Trail</h3>
@@ -243,22 +233,27 @@
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>
 
     <div class="container mx-auto p-6">
         
+        <!-- Error Screen -->
+        <div id="error-screen" class="hidden flex flex-col items-center justify-center py-20 animate-fade-in">
+            <i class="fa-solid fa-triangle-exclamation text-red-500 text-6xl mb-4"></i>
+            <h2 class="text-2xl font-bold text-red-600">Failed to load data.csv</h2>
+            <p id="error-message" class="text-gray-600 mt-2 font-semibold">Please ensure data.csv exists in the root directory.</p>
+        </div>
+
         <!-- Loading Screen -->
-        <div id="loading-screen" class="flex flex-col items-center justify-center py-20 animate-fade-in">
+        <div id="loading-screen" class="hidden flex flex-col items-center justify-center py-20 animate-fade-in">
             <div class="relative">
                 <div class="w-24 h-24 border-4 border-blue-200 border-t-blue-600 rounded-full loader-spin"></div>
                 <i class="fa-solid fa-plane text-blue-600 text-xl absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></i>
             </div>
-            <h2 class="mt-6 text-xl font-bold text-gray-700">Connecting to Data Source...</h2>
-            <p class="text-sm text-gray-500 mt-2">Loading data.csv from server...</p>
-            <div id="error-message" class="hidden mt-4 text-red-500 font-bold bg-red-100 p-4 rounded border border-red-300 text-center"></div>
+            <h2 class="mt-6 text-xl font-bold text-gray-700">Loading & Processing Data...</h2>
+            <p class="text-sm text-gray-500 mt-2">Fetching data.csv and applying Business Logic...</p>
         </div>
 
         <!-- Dashboard UI -->
@@ -296,13 +291,11 @@
             <div class="bg-white rounded-lg shadow-sm p-2 mb-6 overflow-x-auto">
                 <div class="flex space-x-2 min-w-max">
                     <button id="nav-btn-overview" class="tab-btn active px-4 py-2 rounded hover:bg-gray-50 transition text-sm" onclick="switchTab('overview')"><i class="fa-solid fa-chart-pie mr-2"></i>Overview</button>
-                    <!-- Matrix Button Removed -->
                     <button id="nav-btn-fleet" class="tab-btn px-4 py-2 rounded hover:bg-gray-50 transition text-sm" onclick="switchTab('fleet')"><i class="fa-solid fa-plane mr-2"></i>Fleet Health</button>
                     <button id="nav-btn-rootcause" class="tab-btn px-4 py-2 rounded hover:bg-gray-50 transition text-sm" onclick="switchTab('rootcause')"><i class="fa-solid fa-wrench mr-2"></i>Root Cause</button>
                     <button id="nav-btn-phrase" class="tab-btn px-4 py-2 rounded hover:bg-gray-50 transition text-sm" onclick="switchTab('phrase')"><i class="fa-solid fa-quote-right mr-2"></i>Phrase Mining</button>
                     <button id="nav-btn-chronic" class="tab-btn px-4 py-2 rounded hover:bg-gray-50 transition text-sm text-red-600 font-bold" onclick="switchTab('chronic')"><i class="fa-solid fa-clock-rotate-left mr-2"></i>Chronic</button>
                     <button id="nav-btn-statement" class="tab-btn px-4 py-2 rounded hover:bg-gray-50 transition text-sm" onclick="switchTab('statement')"><i class="fa-solid fa-file-signature mr-2"></i>Problem Statement</button>
-                    <!-- NEW SUMMARY TAB BUTTON -->
                     <button id="nav-btn-summary" class="tab-btn px-4 py-2 rounded hover:bg-gray-50 transition text-sm" onclick="switchTab('summary')"><i class="fa-solid fa-list-alt mr-2 text-indigo-600"></i>Complaint Summary</button>
                     <button id="nav-btn-rawdata" class="tab-btn px-4 py-2 rounded hover:bg-gray-50 transition text-sm" onclick="switchTab('rawdata')"><i class="fa-solid fa-table mr-2"></i>Raw Data</button>
                 </div>
@@ -312,13 +305,10 @@
             <div id="tab-overview" class="tab-content animate-fade-in">
                 <!-- Grid Layout: Trend (Left 75%) + Top 5 Cards (Right 25%) -->
                 <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
-                    
-                    <!-- Trend Analysis (Left 3/4) -->
                     <div class="lg:col-span-3 card p-6" id="trend-card">
                         <div class="flex justify-between items-center mb-4">
                             <div class="flex items-center space-x-3">
                                 <h3 class="font-bold text-gray-700">Defect Trend Analysis (By Model)</h3>
-                                <!-- Frequency Selector -->
                                 <div class="flex space-x-1">
                                     <button onclick="setTrendFreq('Day')" id="freq-day" class="trend-btn active">Day</button>
                                     <button onclick="setTrendFreq('Week')" id="freq-week" class="trend-btn">Week</button>
@@ -333,30 +323,18 @@
                         </div>
                         <div id="trend-chart" style="height:400px;"></div>
                     </div>
-
-                    <!-- Top 5 Cards (Right 1/4) -->
                     <div class="lg:col-span-1 flex flex-col gap-6">
-                        <!-- Top 5 Aircraft -->
                         <div class="card p-4 flex-1">
                             <h4 class="text-sm font-bold text-gray-700 border-b pb-2 mb-2"><i class="fa-solid fa-plane-up mr-2 text-purple-500"></i>Top 5 Aircraft</h4>
-                            <div id="top5-ac-list" class="overflow-y-auto max-h-[250px] custom-scroll pr-1">
-                                <!-- JS Populated -->
-                            </div>
+                            <div id="top5-ac-list" class="overflow-y-auto max-h-[250px] custom-scroll pr-1"></div>
                         </div>
-                        <!-- Top 5 ATA -->
                         <div class="card p-4 flex-1">
                             <h4 class="text-sm font-bold text-gray-700 border-b pb-2 mb-2"><i class="fa-solid fa-wrench mr-2 text-yellow-500"></i>Top 5 ATA</h4>
-                            <div id="top5-ata-list" class="overflow-y-auto max-h-[250px] custom-scroll pr-1">
-                                <!-- JS Populated -->
-                            </div>
+                            <div id="top5-ata-list" class="overflow-y-auto max-h-[250px] custom-scroll pr-1"></div>
                         </div>
                     </div>
-
                 </div>
-
-                <!-- Row 2: Category & Status Charts -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Issue Category -->
                     <div class="card p-6">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="font-bold text-gray-700">Issue Category</h3>
@@ -364,7 +342,6 @@
                         </div>
                         <div id="cat-chart" style="height:350px;"></div>
                     </div>
-                    <!-- Maintenance Status -->
                     <div class="card p-6">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="font-bold text-gray-700">Maintenance Status</h3>
@@ -374,8 +351,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Tab Matrix Removed -->
 
             <div id="tab-fleet" class="tab-content hidden animate-fade-in">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -399,8 +374,6 @@
                         <div id="sunburst-chart" style="height:500px;"></div>
                     </div>
                 </div>
-                
-                <!-- MOVED MATRIX HEATMAP HERE -->
                 <div class="card p-6" id="matrix-card">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-gray-700">Fleet Defect Heatmap (Aircraft vs ATA)</h3>
@@ -414,7 +387,6 @@
             </div>
 
             <div id="tab-rootcause" class="tab-content hidden animate-fade-in">
-                <!-- MOVED ATA PARETO HERE (TOP) -->
                 <div class="card p-6 mb-6">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-gray-700">ATA Pareto</h3>
@@ -422,7 +394,6 @@
                     </div>
                     <div id="pareto-chart" style="height:400px;"></div>
                 </div>
-
                  <div class="card p-6">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-gray-700">Top ATA Chapters (From Main ATA)</h3>
@@ -437,12 +408,10 @@
             </div>
 
             <div id="tab-phrase" class="tab-content hidden animate-fade-in">
-                <!-- 1. Word Frequency Analysis (Moved to Top) -->
                 <div class="card p-6 mb-6">
                     <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
                         <div class="flex items-center space-x-4">
                             <h3 class="font-bold text-gray-700">Word Frequency Analysis (Dictionary Matched)</h3>
-                            <!-- เพิ่มคำอธิบายสีแท่งกราฟ -->
                             <div class="hidden md:flex items-center space-x-2 text-[10px] font-bold text-gray-500">
                                 <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-[#E11D48] mr-1"></span>Symptom</span>
                                 <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-[#4F46E5] mr-1"></span>Component</span>
@@ -460,34 +429,16 @@
                     </div>
                     <div id="ngram-chart" style="height:400px;"></div>
                 </div>
-
-                <!-- 2. Defect Resolution Flow (Sankey) - Extracted as separate card -->
                 <div class="card p-6 mb-6">
                      <div class="flex justify-between items-center mb-4">
                          <h3 class="font-bold text-gray-700">🌊 Defect Resolution Flow (Symptom -> Component -> Action)</h3>
-                         <!-- Export Button -->
                          <button onclick="exportResolutionFlow()" class="text-gray-400 hover:text-green-600 transition" title="Export Sankey Flow"><i class="fa-solid fa-file-excel"></i></button>
                     </div>
                     <div id="echart-sankey" style="height: 500px;"></div>
                 </div>
-
-                <!-- 3. Advanced Text Mining Insights (Risk Matrix) - Moved to Bottom -->
-                <div class="card p-6 mb-6">
-                    <h3 class="font-bold text-gray-700 mb-4"><i class="fa-solid fa-microscope mr-2 text-purple-600"></i>Advanced Text Mining Insights (ECharts)</h3>
-                    
-                    <!-- Risk Matrix (Full Width) -->
-                    <div class="border rounded-lg p-4 relative">
-                         <div class="flex justify-between items-center mb-2">
-                            <h4 class="text-sm font-bold text-gray-600">🔥 Flight Phase Risk Matrix (Symptom vs Phase)</h4>
-                             <!-- Export Button -->
-                            <button onclick="exportRiskMatrix()" class="text-gray-400 hover:text-green-600 transition" title="Export Risk Matrix"><i class="fa-solid fa-file-excel"></i></button>
-                        </div>
-                        <div id="echart-heatmap" style="height: 400px;"></div>
-                    </div>
-                </div>
             </div>
 
-             <div id="tab-chronic" class="tab-content hidden animate-fade-in">
+            <div id="tab-chronic" class="tab-content hidden animate-fade-in">
                 <div class="card p-6">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-red-700"><i class="fa-solid fa-triangle-exclamation mr-2"></i>Chronic Alert (Repeats in Selection)</h3>
@@ -524,11 +475,9 @@
                 </div>
             </div>
 
-            <!-- NEW TAB: COMPLAINT SUMMARY -->
+            <!-- COMPLAINT SUMMARY -->
             <div id="tab-summary" class="tab-content hidden animate-fade-in">
                 <div class="flex flex-col gap-6">
-                    
-                    <!-- 1. Original Grouped Summary Card -->
                     <div class="card p-6" id="summary-original-card">
                         <div class="flex justify-between items-center mb-4">
                             <div>
@@ -542,12 +491,9 @@
                                 <button onclick="exportOriginalSummaryData()" class="text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded shadow-sm flex items-center transition"><i class="fa-solid fa-file-excel mr-1"></i>Export Excel</button>
                             </div>
                         </div>
-                        <div id="summary-original-content" class="overflow-auto custom-scroll p-0 border border-gray-200 rounded-lg bg-gray-50" style="max-height: 450px;">
-                            <!-- JS populated original grouped table -->
-                        </div>
+                        <div id="summary-original-content" class="overflow-auto custom-scroll p-0 border border-gray-200 rounded-lg bg-gray-50" style="max-height: 450px;"></div>
                     </div>
 
-                    <!-- 2. L2 Standardized Issue Summary Card -->
                     <div class="card p-6 border-t-4 border-teal-500" id="summary-l2-card">
                         <div class="flex justify-between items-center mb-4">
                             <div>
@@ -561,11 +507,8 @@
                                 <button onclick="exportL2SummaryData()" class="text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded shadow-sm flex items-center transition"><i class="fa-solid fa-file-excel mr-1"></i>Export Excel</button>
                             </div>
                         </div>
-                        <div id="summary-l2-content" class="overflow-auto custom-scroll p-0 border border-gray-200 rounded-lg bg-gray-50" style="max-height: 450px;">
-                            <!-- JS populated L2 grouped table -->
-                        </div>
+                        <div id="summary-l2-content" class="overflow-auto custom-scroll p-0 border border-gray-200 rounded-lg bg-gray-50" style="max-height: 450px;"></div>
                     </div>
-
                 </div>
             </div>
 
@@ -576,23 +519,17 @@
                             <h3 class="font-bold text-gray-700">Source Data View</h3>
                             <div id="raw-count" class="text-xs text-gray-500"></div>
                         </div>
-                        
                         <div class="flex space-x-2 items-center">
-                            <!-- Fullscreen Button -->
                             <button onclick="toggleFullscreen('raw-card', 'raw-table-container')" class="text-sm bg-white border border-gray-300 px-3 py-1.5 rounded shadow-sm hover:bg-gray-50 flex items-center text-gray-600" title="Toggle Fullscreen">
                                 <i class="fa-solid fa-expand"></i>
                             </button>
-                             <!-- Export Full Data -->
                             <button onclick="exportRawData()" class="text-sm bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded shadow-sm flex items-center">
                                 <i class="fa-solid fa-file-excel mr-2"></i>Excel
                             </button>
-                            <!-- Table Search -->
                             <div class="relative">
                                 <input type="text" id="table-search" placeholder="Search in table..." class="text-sm border border-gray-300 rounded pl-8 pr-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 w-64" onkeyup="searchTable()">
                                 <i class="fa-solid fa-search absolute left-2.5 top-2.5 text-gray-400 text-xs"></i>
                             </div>
-
-                            <!-- Column Selector Button -->
                             <div class="relative">
                                 <button onclick="toggleColMenu()" class="text-sm bg-white border border-gray-300 px-3 py-1.5 rounded shadow-sm hover:bg-gray-50 flex items-center">
                                     <i class="fa-solid fa-table-columns mr-2 text-blue-500"></i>Select Columns <i class="fa-solid fa-chevron-down ml-2 text-xs"></i>
@@ -604,14 +541,11 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Table Container with Fixed Height & Scroll -->
                     <div id="raw-table-container" class="overflow-auto custom-scroll max-h-[600px] border rounded shadow-inner relative">
-                        <!-- Updated class: removed whitespace-nowrap -->
                         <table class="w-full text-sm text-left text-gray-600" id="raw-data-table"></table>
                     </div>
                     <div class="mt-2 text-xs text-gray-400 italic text-right">* Tip: Click a row to highlight it.</div>
                     
-                    <!-- Pagination Controls -->
                     <div id="pagination-controls" class="flex justify-between items-center mt-4 border-t pt-3">
                          <div class="text-xs text-gray-500" id="page-info">Showing page 1</div>
                          <div class="flex space-x-2">
@@ -626,41 +560,47 @@
     </div>
 
     <script>
+        // --- XSS Protection Helper ---
+        function escapeHTML(str) {
+            if (typeof str !== 'string') return str;
+            return str.replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;'
+            }[tag] || tag));
+        }
+
         // --- JS LOGIC FOR CUSTOM TOOLTIP ---
         let tooltipActive = false;
         let clickOriginX = 0;
         let clickOriginY = 0;
 
         function showActionTooltip(event, tdElement) {
-            event.stopPropagation(); // ป้องกันไม่ให้คลิกทะลุไปโดนตัวปิดกล่องทันที
-            
+            event.stopPropagation();
             const tooltip = document.getElementById('custom-action-tooltip');
+            const notiText = tdElement.getAttribute('data-noti');
             const actText = tdElement.getAttribute('data-act');
             const actCode = tdElement.getAttribute('data-code');
             
+            document.getElementById('tt-noti').innerText = notiText || '-';
             document.getElementById('tt-act-text').innerText = actText || 'No Activity Data';
             document.getElementById('tt-act-code').innerText = actCode || '-';
             
             tooltip.classList.remove('hidden');
             
-            // กำหนดตำแหน่งกล่องให้อยู่ใกล้ๆ จุดที่คลิก
             const rect = tooltip.getBoundingClientRect();
             let mouseX = event.clientX + 15;
             let mouseY = event.clientY + 15;
             
-            // ป้องกันไม่ให้ Tooltip ล้นจอ
-            if (mouseX + rect.width > window.innerWidth) {
-                mouseX = window.innerWidth - rect.width - 10;
-            }
-            if (mouseY + rect.height > window.innerHeight) {
-                mouseY = event.clientY - rect.height - 15;
-            }
+            if (mouseX + rect.width > window.innerWidth) mouseX = window.innerWidth - rect.width - 10;
+            if (mouseY + rect.height > window.innerHeight) mouseY = event.clientY - rect.height - 15;
             
             tooltip.style.left = mouseX + 'px';
             tooltip.style.top = mouseY + 'px';
             tooltip.classList.remove('opacity-0');
 
-            // บันทึกตำแหน่งที่คลิกเพื่อใช้ตรวจสอบการเลื่อนเมาส์
             clickOriginX = event.clientX;
             clickOriginY = event.clientY;
             tooltipActive = true;
@@ -669,11 +609,10 @@
         function hideActionTooltip() {
             const tooltip = document.getElementById('custom-action-tooltip');
             tooltip.classList.add('opacity-0');
-            tooltip.classList.add('hidden'); // ซ่อนไปเลย ไม่ต้องหน่วง
+            tooltip.classList.add('hidden');
             tooltipActive = false;
         }
         
-        // ฟังก์ชันสำหรับปิดกล่อง Tooltip เมื่อคลิกที่ว่างๆ (ที่อื่นๆ นอกกล่อง)
         document.addEventListener('click', function(event) {
             const tooltip = document.getElementById('custom-action-tooltip');
             if (!tooltip.classList.contains('hidden') && !tooltip.contains(event.target)) {
@@ -681,140 +620,183 @@
             }
         });
 
-        // ปิดกล่องเมื่อเลื่อนเมาส์ออกจากจุดที่คลิก (ระยะห่างเกิน 30px กันมือสั่นตอนคลิก)
         document.addEventListener('mousemove', function(event) {
             if (tooltipActive) {
                 const tooltip = document.getElementById('custom-action-tooltip');
-                // ถ้าเอาเมาส์เข้าไปชี้ในกล่อง Tooltip ให้ถือว่ากำลังอ่านอยู่ ไม่ต้องปิด
                 if (tooltip.contains(event.target)) return;
-
                 const dist = Math.sqrt(Math.pow(event.clientX - clickOriginX, 2) + Math.pow(event.clientY - clickOriginY, 2));
-                if (dist > 30) {
-                    hideActionTooltip();
-                }
+                if (dist > 30) hideActionTooltip();
             }
         });
 
-        // ปิดกล่องเมื่อมีการ Scroll ไถหน้าจอ
         document.addEventListener('scroll', function(event) {
-            if (tooltipActive) {
-                hideActionTooltip();
-            }
-        }, true); // ใช้ true (capture phase) เพื่อให้จับการ scroll ในตารางย่อยได้
+            if (tooltipActive) hideActionTooltip();
+        }, true);
 
-
-        // --- 1. CONFIG & DICTIONARIES (STRICT LOGIC PRESERVED) ---
+        // --- 1. CONFIG & DICTIONARIES ---
         const wordCategories = {
-            // ทีม 1: ชิ้นส่วน ระบบ สารเคมี และสถานที่
-            "Component": [
-                "ACARS", "ACCU", "ACCUMULATOR", "ACTUATOR", "ADGB", "ADIRU", "ADR", "ADS-B", "A-ICE", "AILERON", 
-                "AIR", "ALTIMETER", "ANTI-ICE", "APU", "ATC", "ATC/XPDR", "AUTO", "AUTO CTL", "AUTOLAND", 
-                "AVIONIC", "AVNCS", "BASIN", "BATTERY", "BEACON LT", "BEARING", "BLADE", "BLEED", "BLEED CAP", 
-                "BODY", "BOLT", "BOTTLE", "BRACKET", "BRAKE", "BRAKE TEMP", "BRAKES PART", "BREAKER", "BRK CTL", 
-                "BRK FAN", "BRK TEMP", "BULB", "BUTTON", "CAB", "CABIN", "CABIN FAN", "CAMERA", "CAP", "CASE DRAIN FILTER", 
-                "CLAMP", "CLG", "CLIP", "COCKPIT", "COCKPIT HANDSET","COM HF", "COMPRESSOR", "COMPUTER", "CONDITION", 
-                "CONE", "CONNECTOR", "CONTACT", "CONTROLLER", "COVER", "CPRSR", "CTL", "CTL SYS", "CYLINDER", 
-                "DATA", "DATABASE", "DATALINK", "DE-ICE", "DET FIRE", "DETECTOR", "DISC", "DISPLAY", "DME", 
-                "DOME", "DOME LT", "DOOR", "DOWNLOCK PIN", "DRAIN", "DUCT", "ECAM", "EDGE", "EFB", "EICAS", 
-                "ELEC", "ELEC GEN", "GEN", "ELEVATOR", "ELEVATOR ACTUATOR", "ENG", "ENG EEC", "ENGINE", "EXTERNAL", 
-                "EXTRACT FAN", "F/CTL", "FAIRING", "FAN", "FASTENER", "FAUCET", "FILTER", "FIN", "FLAP", "FLUID", 
-                "FRAME", "FUEL", "FUEL FILTER", "FUEL INERTING SYS", "FUEL QTY INDICATION", "FUEL TEMP", "FUSE", 
-                "FUSELAGE", "GALLEY", "GAS", "GASKET", "GEAR", "GEAR INDICATION SYS", "GENERATOR", "GLASS", 
-                "GLASS COVER", "GNSS", "GPS", "GPWS", "GREEN", "GUARD", "HANGAR", "HARNESS", "HOSE", "HYD FILTER", 
-                "HYD VLV HT EXCHR BYPASS", "HYDRAULIC", "ICE", "ICE DETECT", "IDENTIFIER", "IGNITOR", "INDICATION", 
-                "INLET", "INPUT", "INTEGRATED", "IRS", "KEYBOARD COVER", "KNOB", "LAMP", "LAN CABLE", "LAVATORY", 
-                "LDG", "LENS", "LEVER", "LIGHT", "LIQUID", "LIQUID COOLING", "LWR", "MASK", "MCU", "MFP", "MIRROR", 
-                "MOTOR", "MOUNT", "MSG", "NAV", "NAV LT", "NITROGEN", "NLG", "NOSE", "NOSE LANDING GEAR", "NOZZLE", 
-                "NUT", "OIL", "OIL FILTER", "OIL LEVEL", "ORIFICE", "OUTLET", "OVEN", "OXYGEN", "PACK FCV", "PAD", 
-                "PANEL", "PB", "PB-SW", "PIPE", "PISTON", "PLACARD", "PLUG", "PRED W/S", "PRESS", "PRESSURE", 
-                "PRIM", "PRINTER", "PROBE", "PRSOV", "PTT", "PUMP", "RA", "RAD ALT", "RADAR", "RADOME", "RAM FAN", 
-                "RECIRC", "REGUL", "RELAY", "RESERVOIR", "RIB", "RIVET", "ROD", "ROTARY", "RUDDER", "RUDDER PEDAL", 
-                "SATCOM", "SATVOICE", "SCREW", "SEAL", "SEAT", "SELECTOR", "SENSOR", "SHAFT", "SHOULDER HARNESS", 
-                "SINK", "SKIN", "SLAT", "SLATS TIP BRK", "SLIDING TABLE", "SOLENOID", "SOURCE", "SPOILER", "SPRING", 
-                "STABILIZER", "STRAP", "STROBE LT", "STRUCTURAL", "SUNSHADE", "SUNVISOR", "SUPPORT", "SURV", "SW", 
-                "SWITCH", "TAB", "TAIL", "TAIL CONE", "TANK", "TAT", "TAXI LT", "TERRAIN", "TIP", "TIRE", "TOILET", 
-                "TRAFFIC", "TRANSMITTER", "TRIM AIR", "TUBE", "UPR", "VALVE", "VANE", "VENT", "VENT SKIN VALVE", "VHF", 
-                "VLV", "VOR", "WASTE TK", "WATER", "WEATHER RADAR SYS", "WHEEL", "WIFI", "WINDOW", 
-                "WINDSHEAR PREDICTIVE", "WINDSHIELD", "WING", "WIPER", "WXR", "WXR ANT", "XPDR"
-            ],
-            
-            // ทีม 2: อาการเสียและสถานะผิดปกติ
-            "Symptom": [
-                "ABNORMAL", "ACTUATOR", "AUTO", "AVIONIC", "AVNCS", "BAD", "BENT", "BIRD STRIKE", "BLINKING", 
-                "BLOCKED", "BRIGHT", "BROKEN", "BURNT", "CAUTION", "CLOGGED", "CLOSE", "COLD", "CRACKED", 
-                "DAMAGE", "DEGRADED", "DIM", "DIRTY", "DISC", "DISCHARGE", "DISCONNECT", "DISCREPANCY", 
-                "FADED", "FAIL", "FAULT", "FLASHING", "FLICKER", "FLUCTUATE", "HIGH", "HEATG", "HIGH VIB", "HOT", 
-                "IDENTIFIER", "INCORRECT", "INOP", "INPUT", "INTEGRATED", "INTERFERENCE", "INTERMITTENT", 
-                "JAMM", "LEAK", "LOCKED", "LONG TERM", "LOOSE", "LOST", "LOUD", "LOUD NOISE", "LOW", 
-                "MISSING", "MSG", "NEARLY EXPIRE", "NO LAND", "NOISE", "NORM", "NOT AVAIL", "NOT DROP", 
-                "NOT ILLUM", "OBSTRUCTED", "OIL CHIP", "OUT", "OVERHEAT", "PEEL OFF", "PEELED OFF", "POOR", 
-                "PRESS", "PRESS LO", "PRESSURE", "QUIET", "RECIRC", "REDUNDANCY", "REGUL", "SHORT TERM", 
-                "SHOW AMBER", "SHUTDOWN", "SINGLE", "SLOW", "SMELL", "SMOKE", "SOUND", "SPOOF", 
-                "STRANGE SOUND", "STUCK", "TEMP OFF LIGHT ILLUM", "TOO COLD", "TORN OFF", "UNABLE TO ACCESS", 
-                "UNABLE TO ADJUST", "UNABLE TO ALIGN", "UNABLE TO CONTROL", "UNABLE TO FLUSH", "UNABLE TO LOCK", 
-                "UNABLE TO OPEN", "UNABLE TO PRINT", "UNABLE TO RECEIVE", "UNABLE TO SEND", "UNABLE TO TRANSMIT", 
-                "UNABLE TO TURN", "UNABLE TO TURN OFF", "UNABLE TO TURN ON", "UNABLE TO USE", "UNSERVICEABLE", 
-                "UNUSUAL", "VIBRATION", "WAS USED", "WEIRD", "WORN OUT", "WORSE", "WRONG"
-            ],
-
-            // ทีม 3: การจัดการและการกระทำของช่าง
-            "Action": [
-                "ADJUSTED", "CORRECTED", "EXPECT", "PASS", "REVISED", "SEARCH", "SERVICING", "START", "SUSPECT", 
-                "SUSPECTED", "UPDATE", "USED", "VERIFICATION"
-            ],
-
-            // ทีม 4: เหตุการณ์และปัจจัยภายนอก
-            "Event": [
-                "BIRD", "BIRD STRIKE", "BIRDSTRIKE", "LIGHTNING", "LIGHTNING STRIKE", "STRIKE"
-            ],
-
-            // ทีม 5: เอกสาร สัมภาระ และการดำเนินการ
-            "Operation": [
-                "BULK", "COMP", "ETOPS", "FC", "FH", "LIVE CRAB", "LIVE FISH", "LOGBOOK", "SEAFOOD", "SPARE", 
-                "TECH LOG", "WET CARGO"
-            ],
-
-            // ทีม 6: ตำแหน่ง (Location เดิม)
-            "Location": [
-                "AFT", "BOTTOM", "CAB", "CABIN", "CAPT", "CENTER", "CKPT", "COCKPIT", "CTR", "ENG1", "ENG2", 
-                "FO", "FRONT", "FWD", "INBD", "INBOARD", "L", "L/H", "LEFT", "LH", "LOWER", "LWR", "MAIN", 
-                "MID", "OUTBD", "OUTBOARD", "PACK BAY", "POS", "R", "R/H", "REAR", "RH", "RIGHT", 
-                "SIDE", "TAIL CONE", "TOP", "UPPER", "UPR", "ZONE"
-            ]
+            "Component": ["IGN","CTRL","TURBINE","CASE","INTERPHONE","MONIT","ALTN","RSVR","HYD","JETT","PMP", "TK", "STBY","TEMP","INDICATION","ADR/IR/ISIS","ELAC","PITCH","LOG BOOK","FIRE LOOP","RAT", "IDG","MONITORING","C/B","NBPT","DRIVE","TR","ACARS", "ACCU", "ADGB","ADS-B", "A-ICE", "AILERON", "AIR", "APU", "ATC", "ATC/XPDR", "AUTO CTL","AUTOLAND","BOOM MIC","BOOMSET","BLOWER", "BATTERY", "BEACON LT", "BLEED", "BLEED CAP", "BODY","BRAKE", "BRAKES PART","BRK CTL", "BRK FAN", "BRK", "BULB", "BUTTON", "CAB", "CABIN", "FAN", "CAMERA","CASE DRAIN FILTER", "CLG", "COCKPIT", "HANDSET", "HEADSET","COM HF", "COMPRESSOR", "COMPUTER","CPRSR", "CTL", "CTL SYS","CTR", "DATA", "DATALINK", "DET FIRE","DISPLAY", "DOME LT", "DOOR", "DOWNLOCK PIN", "DRAIN", "ECAM", "EDGE", "EFB", "EICAS", "ELEC GEN", "ELEVATOR", "ELEVATOR ACTUATOR","EMER", "ENG", "ENG EEC", "ENGINE", "EXTERNAL", "EXTRACT FAN", "F/CTL", "FAIRING", "FAN", "FASTENER", "FAUCET", "FILTER", "FLAP", "FLUID","FUEL", "FUEL FILTER", "FUEL INERTING SYS", "FUEL QTY INDICATION", "FUSE", "FUSELAGE","GA SOFT","GALLEY", "GAS","GEAR", "GEAR INDICATION SYS", "GENERATOR", "GLASS", "GLASS COVER", "GNSS", "GPS","HANGAR", "HARNESS", "HYDRAULIC", "ICE", "ICE DETECT","INACCURATE","IGNITOR", "INDICATION", "KEYBOARD COVER", "KNOB", "LAMP", "LAN CABLE", "LAVATORY", "LENS", "LEVER", "LIGHT", "LIQUID", "LIQUID COOLING", "LWR", "MASK", "MCU", "MFP","NAV", "NAV LT", "NITROGEN", "NLG", "NOSE", "NOSE LANDING GEAR","OIL", "OIL FILTER", "OIL LEVEL","OXYGEN", "PACK FCV", "PAD", "PANEL", "PB", "PIPE", "PRED W/S","PRIM", "PRINTER", "PROBE", "PRSOV", "PTT", "PUMP", "RAD ALT", "RADOME", "RAM FAN", "REFUEL", "RESERVOIR", "RUDDER", "RUDDER PEDAL", "SATCOM", "SATVOICE", "SCREW", "SEAL", "SEAT", "SENSOR", "SGL", "SHOULDER HARNESS", "SINK", "SKIN", "SLAT", "TIP BRK", "SLIDING TABLE", "SOLENOID", "SOURCE","STABILIZER","STROBE LT", "STRUCTURAL", "SUNSHADE", "SUNVISOR","SURV", "SW", "SWITCH", "TAB", "TAIL", "TAIL CONE", "TANK", "TAT", "TAXI LT","TIRE", "TOILET", "TRAFFIC","TRIM AIR","UPR","VARIABLE", "VALVE", "VANE", "VENT", "VENT SKIN VALVE", "VHF", "VLV", "WASTE TK", "WATER", "WEATHER RADAR SYS", "WHEEL", "WIFI", "WINDOW","WINDSHEAR PREDICTIVE", "WINDSHIELD", "WING", "WIPER", "WXR", "ANT", "XPDR","TCAS","VIDEO"],
+            "Symptom": ["RELEASE","EXCHR","QTY","QUANTITY","SHEDDING","NOT FUNCTION","ABNORMAL", "ACTUATOR", "AUTO", "AVIONIC", "AVNCS", "BAD", "BENT", "BIRD STRIKE", "BLINKING", "BLOCKED", "BRIGHT", "BROKEN", "BURNT","COOLING", "CAUTION", "CLOGGED", "CLOSE", "COND", "CRACKED", "DAMAGE", "DEGRADED", "DIM", "DIRTY", "DISC", "DISCHARGE", "DISCONNECT", "DISCREPANCY","DIFFUSER", "FADED", "FAIL", "FAULT", "FLASHING", "FLICKER", "FLUCTUATE", "HIGH", "HEATG", "HIGH VIB", "HOT", "IDENTIFIER", "INCORRECT", "INOP", "INPUT", "INTEGRATED", "INTERFERENCE", "INTERMITTENT", "JAMMIN", "LEAK", "LOCKED", "LONG TERM", "LOOSE", "LOST", "LOUD", "LOUD NOISE", "LOW", "MISSING", "MSG", "NEARLY EXPIRE", "NO LAND", "NOISE", "NORM", "NOT AVAIL", "NOT DROP", "NOT ILLUM", "OBSTRUCTED", "OIL CHIP", "OUT", "OVERHEAT", "PEEL OFF", "PEELED OFF", "POOR", "PRESS", "PRESS LO", "PRESSURE", "QUIET", "RECIRC", "REDUNDANCY", "REGUL", "SHORT TERM", "SHOW AMBER", "SHUTDOWN", "SINGLE", "SLOW", "SMELL", "SMOKE", "SOUND", "SPOOFING", "STRANGE SOUND", "STUCK", "TEMP OFF LIGHT ILLUM", "TOO COLD", "TORN OFF", "UNABLE TO ACCESS", "UNABLE TO ADJUST", "UNABLE TO ALIGN", "UNABLE TO CONTROL", "UNABLE TO FLUSH", "UNABLE TO LOCK", "UNABLE TO OPEN", "UNABLE TO PRINT", "UNABLE TO RECEIVE", "UNABLE TO SEND", "UNABLE TO TRANSMIT", "UNABLE TO TURN", "UNABLE TO TURN OFF", "UNABLE TO TURN ON", "UNABLE TO USE", "UNSERVICEABLE", "UNUSUAL", "VIBRATION", "WAS USED", "WEIRD", "WORN OUT", "WORSE", "WRONG","REJECTED"],   
+            "Action": ["ADJUSTED", "CORRECTED", "EXPECT", "PASS", "REVISED", "SEARCH", "SERVICING", "START", "SUSPECT", "SUSPECTED", "UPDATE", "USED", "VERIFICATION"],
+            "Event": ["BIRD", "BIRD STRIKE", "BIRDSTRIKE", "LIGHTNING", "LIGHTNING STRIKE", "STRIKE"],
+            "Operation": ["BULK", "COMP", "ETOPS", "FC", "FH", "LIVE CRAB", "LIVE FISH", "LOGBOOK", "SEAFOOD", "SPARE", "TECH LOG", "WET CARGO"],
+            "Location": ["AFT", "BOTTOM", "CAB", "CABIN", "CAPT", "CENTER", "CKPT", "COCKPIT", "CTR", "ENG1", "ENG2", "FO", "FRONT", "FWD", "INBD", "INBOARD", "L", "L/H", "LEFT", "LH", "LOWER", "LWR", "MAIN", "MID", "OUTBD", "OUTBOARD","PACK", "PACK BAY", "POS", "R", "R/H", "REAR", "RH", "RIGHT", "SIDE", "TAIL CONE", "TOP", "UPPER", "UPR", "ZONE"]
         };
 
-        // --- 2. L2 SUMMARY MAPPING RULES (อิงจากคำที่สกัดได้) ---
         const l2MappingRules = [
+            { component: ["LOG BOOK"], symptom: "", l2Summary: "LOG BOOK" },
             // --- ATA 21 ---
             { component: ["CAB", "AUTO", "CTL"], symptom: "PRESS", l2Summary: "DM: CAB PRESS AUTO CTL SYS" },
-            { component: ["AIR", "CPRSR"], symptom: "DISPLAY", location: "CABIN", l2Summary: 'EICAS MSG "CABIN AIR CPRSR" DISPLAYED' },
-            { component: ["PACK FCV", "UPR"], symptom: "MSG", l2Summary: 'EICAS MSG "PACK FCV UPR" DISPLAYED' },
-            { component: ["PACK FCV", "LWR"], symptom: "MSG", l2Summary: 'EICAS MSG "PACK FCV LWR" DISPLAYED' },
-            { component: ["TRIM AIR", "PRSOV"], symptom: "DISPLAY", l2Summary: 'EICAS MSG "TRIM AIR PRSOV" DISPLAYED' },
-            { component: ["TRIM AIR", "PRSOV"], symptom: "MSG", l2Summary: 'EICAS MSG "TRIM AIR PRSOV" DISPLAYED' },
-            { component: "TRIM AIR", symptom: "FAULT", l2Summary: "TRIM AIR SYSTEM FAULT" },
+            { component: ["AIR", "CPRSR"], symptom: "DISPLAY | MSG", location: "CABIN", l2Summary: 'EICAS MSG "CABIN AIR CPRSR" DISPLAYED' },
+            { component: ["AIR", "CPRSR","CABIN"], symptom: "DISPLAY | MSG", l2Summary: 'EICAS MSG "CABIN AIR CPRSR" DISPLAYED' },
+            { component: ["PACK FCV", "UPR"], symptom: "MSG", l2Summary: 'EICAS MSG "PACK FCV UPR" DISPLAYED' }, { component: ["PACK FCV", "LWR"], symptom: "MSG", l2Summary: 'EICAS MSG "PACK FCV LWR" DISPLAYED' },
+            { component: ["TRIM AIR", "PRSOV"], symptom: "DISPLAY", l2Summary: 'EICAS MSG "TRIM AIR PRSOV" DISPLAYED' },{ component: ["TRIM AIR", "PRSOV"], symptom: "MSG", l2Summary: 'EICAS MSG "TRIM AIR PRSOV" DISPLAYED' },
+            { component: "TRIM AIR", symptom: "FAULT", l2Summary: "TRIM AIR SYSTEM FAULT" },{ component: "AIR", symptom: ["FAULT","HOT"], l2Summary: "TRIM AIR SYSTEM FAULT" },
             { component: ["AIR", "CLG"], symptom: "DISPLAY | RECIRC | INTEGRATED", l2Summary: 'EICAS MSG "INTEGRATED CLG RECIRC AIR" DISPLAYED' },
-            
+            { component: [""], symptom: ["DISPLAY","COOLING","LEAK","INTEGRATED"], l2Summary: 'EICAS MSG "INTEGRATED COOLING LEAK" DISPLAYED' },
+            { component: ["AIR", "PACK", "REGUL"], symptom: "FAULT | DEGRADED | REDUNDANCY", l2Summary: "AIR PACK REGUL FAULT" }, { component: ["AIR", "PACK"], symptom: "DEGRADED", l2Summary: "AIR PACK REGUL FAULT" },{ component: ["AIR", "PACK"], symptom: "FAULT", l2Summary: "AIR PACK REGUL FAULT" },       
+            { component: ["VENT", "BLOWER"], symptom: "FAULT", l2Summary: "VENT BLOWER FAULT" }, { component: ["VENT", "AVNCS"], symptom: "", l2Summary: "VENT AVNCS FAULT" },  
+            { component: ["LIQUID COOLING", "PUMP"], symptom: "MSG", l2Summary: 'EICAS MSG "LIQUID COOLING PUMP" DISPLAYED' }, { component: ["RAM FAN"], symptom: "MSG", l2Summary: 'EICAS MSG "RAM FAN" DISPLAYED' },
+            { component: ["CPRSR", "VARIABLE"], symptom: ["MSG","DIFFUSER"], l2Summary: 'EICAS MSG "CPRSR VARIABLE DIFFUSER" DISPLAYED' },
             // --- ATA 23 ---
             { component: ["SATCOM"], symptom: "FAULT", l2Summary: "DM : COM SATCOM FAULT" },
             { component: ["DATALINK", "COM HF"], symptom: "", l2Summary: "DM : COM HF DATALINK" },
             { component: ["COM HF"], symptom: "FAULT", l2Summary: "DM : COM HF DATALINK" },
             { component: ["DATALINK"], symptom: "FAULT", l2Summary: "DATALINK FAULT" },
             { component: ["EICAS", "SATCOM"], symptom: "MSG | DISPLAY", l2Summary: 'EICAS STAT MSG "SATCOM SYS" DISPLAY' },
-
-
-            // --- ATA 34 ---
-            { component: ["ELEC","GEN","VALVE"], symptom: "DISPLAY", l2Summary: 'EICAS MSG "ELEC GEN AIR/OIL VALVE" DISPLAYED' },
-            
-            // --- ATA 34 ---
-            { component: "GPS", symptom: "FAULT", l2Summary: "GPS SYSTEM FAULT" },
-            { component: "RAD ALT", symptom: "FAULT", l2Summary: "RADIO ALTIMETER FAULT" },
-            { component: ["A-ICE", "PROBE"], symptom: "HEATG", l2Summary: "PROBE HEATER FAULT" },
+            { component: ["SATVOICE"], symptom: "LOST", l2Summary: 'EICAS MSG " SATVOICE LOST" DISPLAYED' },
+            { component: ["DATALINK","VHF"], symptom: "", l2Summary: 'EICAS MSG "VHF DATALINK" DISPLAYED' },
+            { component: ["VIDEO"], symptom: "NOT AVAIL", l2Summary: "CAMERA/VDO SYSTEM FAULT" },
+            { component: ["COM","VHF","EMER"], symptom: "REDUNDANCY", l2Summary: "DM: COM VHF EMER SUPPLY REDUNDANCY" },
+            { component: ["CAMERA"], symptom: "", l2Summary: "CAMERA/VDO SYSTEM FAULT" },
+            { component: ["VIDEO"], symptom: "", l2Summary: "CAMERA/VDO SYSTEM FAULT" },
+            { component: ["BIRD", "STRIKE"], symptom: "", l2Summary: "BIRD STRIKE" },
+            { component: "BOOM MIC | BOOMSET | HEADSET", symptom: "", l2Summary: "HEADSET/BOOMSET FAULT" },
+            // --- ATA 24 ---
+            { component: ["TR"], symptom: "FAULT", l2Summary: "ELEC TR FAULT" }, { component: ["TR","ELEC"], symptom: "", l2Summary: "ELEC TR FAULT" },
+            { component: ["DRIVE", "OIL LEVEL"], symptom: "", l2Summary: "ELEC DRIVE OIL LEVEL LOW" }, { component: ["NBPT"], symptom: "NOT FUNCTION", l2Summary: "NBPT NOT FUNCTION" },
+            { component: ["ELEC", "C/B", "MONITORING"], symptom: "", l2Summary: "DM: ELEC C/B MONITORING" }, { component: ["RAT"], symptom: "SHEDDING", l2Summary: "DM: ELEC RAT SHEDDING REDUNDANCY" },
+            { component: ["CAMERA"], symptom: "INOP | BLUR", l2Summary: "CAMERA/VDO SYSTEM FAULT" }, { component: ["ELEC", "OIL", "IDG"], symptom: "", l2Summary: "ELEC IDG OIL SYS FAULT" },
+            { component: ["ELEC", "GEN", "VALVE"], symptom: "MSG", l2Summary: 'EICAS MSG "ELEC GEN AIR/OIL VALVE" DISPLAYED' }, { component: ["ELEC GEN", "AIR"], symptom: "DISPLAY", l2Summary: 'EICAS MSG "ELEC GEN AIR/OIL VALVE" DISPLAYED' },
+            // --- ATA 26 ---
+            { component: ["SMOKE"], symptom: "CAUTION | MSG | DISPLAY | FAULT", l2Summary: "SMOKE DETECTION" },
+            { component: ["FIRE LOOP"], symptom: "", l2Summary: "DM: ENG FIRE LOOP" },
+            { component: ["DET FIRE"], symptom: "MSG | DISPLAY", l2Summary: 'EICAS MSG "DET FIRE ENG" DISPLAYED' },
+            // --- ATA 27 ---
+            { component: ["F/CTL", "SLAT","TIP BRK", "SENSOR"], symptom: "", l2Summary: "F/CTL SLATS TIP BRK SENSOR" },
+            { component: ["F/CTL", "FLAP", "ADGB"], symptom: "", l2Summary: "F/CTL FLAP ADGB" },
+            { component: ["F/CTL", "STABILIZER"], symptom: "ACTUATOR", l2Summary: "F/CTL STABILIZER ACTUATOR FAULT" },
+            { component: ["F/CTL", "RUDDER"], symptom: "ACTUATOR", l2Summary: "F/CTL RUDDER ACTUATOR FAULT" },
+            { component: ["F/CTL", "INR AILERON"], symptom: "ACTUATOR", l2Summary: "F/CTL INR AILERON ACTUATOR FAULT" },
+            { component: ["F/CTL", "AILERON"], symptom: ["OUT","ACTUATOR"], l2Summary: "F/CTL OUTR AILERON ACTUATOR FAULT" }, { component: ["F/CTL", "ELEVATOR"], symptom: "ACTUATOR", l2Summary: "F/CTL ELEVATOR ACTUATOR" },
+            { component: ["F/CTL", "PRIM"], symptom: "FAULT", l2Summary: "F/CTL PRIM FAULT" },{ component: ["PRIM"], symptom: "FAULT", l2Summary: "F/CTL PRIM FAULT" }, { component: ["F/CTL", "SPLR"], symptom: "FAULT", l2Summary: "F/CTL SPLR FAULT" },
+            { component: ["F/CTL", "SLAT"], symptom: "FAULT", l2Summary: "F/CTL SLAT SYS FAULT" },
+            { component: ["F/CTL", "AILERON", "SENSOR"], symptom: "PRESSURE", l2Summary: "F/CTL AILERON PRESSURE SENSOR" },
+            { component: ["F/CTL", "DIFF", "FLAP"], symptom: "SETTING", l2Summary: "F/CTL DIFF FLAP SETTING" }, { component: ["F/CTL", "ELAC", "PITCH"], symptom: "FAULT", l2Summary: "F/CTL ELAC PITCH FAULT" },{ component: ["ELAC"], symptom: "FAULT", l2Summary: "F/CTL ELAC PITCH FAULT" },
+            { component: ["F/CTL", "ADR/IR/ISIS"], symptom: "REDUNDANCY", l2Summary: "F/CTL ADR/IR/ISIS DATA REDUNDANCY" },
+            { component: ["F/CTL", "SPLR"], symptom: "ACTUATOR", l2Summary: "F/CTL SPLR FAULT" }, { component: ["F/CTL", "SPLR"], symptom: "", l2Summary: "F/CTL SPLR FAULT" },
+            { component: ["F/CTL", "FLAP"], symptom: "FAULT", l2Summary: "F/CTL FLAP SYS FAULT" }, { component: ["FLAP"], symptom: "FAULT", l2Summary: "F/CTL FLAP SYS FAULT" },
+            // --- ATA 28 ---
+            { component: ["FUEL","TEMP", "INDICATION"], symptom: "", l2Summary: 'FUEL TEMP INDICATION' },
+            { component: ["FUEL", "INDICATION"], symptom: "QTY | QUANTITY", l2Summary: 'FUEL QTY INDICATION' },
+            { component: ["FUEL", "VLV | VALVE"], symptom: "FAULT | MSG", l2Summary: "FUEL ENG VALVE FAULT" },
+            { component: ["FUEL INERTING SYS"], symptom: "FAULT", l2Summary: "FUEL INERTING SYS FAULT" }, { component: ["FUEL INERTING SYS"], symptom: "", l2Summary: "FUEL INERTING SYS FAULT" },
+            { component: ["CTR", "PMP | PUMP"], symptom: "LO PR | FAULT", l2Summary: "FUEL PUMP FAULT" },
+            { component: ["FUEL", "SCAVENGE"], symptom: "MSG", l2Summary: 'FUEL SCAVENGE SYS' },
+            { component: ["FUEL", "DATA"], symptom: "REDUNDANCY", l2Summary: "FUEL TK DATA REDUNDANCY" },
+            { component: ["FUEL", "VLV | VALVE", "SCAVENGE"], symptom: "", l2Summary: "FUEL SCAVENGE VLV" },
+            { component: ["FUEL", "QTY | QUANTITY", "SENSOR"], symptom: "", l2Summary: "FUEL QTY SENSOR" },
+            { component: ["FUEL","TK", "PMP | PUMP", "STBY"], symptom: "", l2Summary: "FUEL TK STBY PUMP FAULT" },
+            { component: ["FUEL", "AFT", "XFR"], symptom: "FAULT | INOP", l2Summary: "FUEL AFT XFR FAULT" }, { component: ["FUEL", "CTR", "XFR"], symptom: "", l2Summary: "FUEL CTR XFR FAULT" },
+            { component: ["FUEL", "FEED"], symptom: "FAULT", l2Summary: "FUEL AUTO FEED FAULT" }, { component: ["FUEL", "JETT", "PMP | PUMP"], symptom: "", l2Summary: "FUEL JETT PUMP" },
+            // --- ATA 29 ---
+            { component: ["HYD","VLV | VALVE","PASS"], symptom: ["MSG | DISPLAY","EXCHR"], l2Summary: "HYD VLV HT EXCHR BY PASS" }, { component: ["HYD","RSVR", "AIR", "BLEED"], symptom: "", l2Summary: "HYD RSVR AIR BLEED" },
+            { component: ["HYD", "PASS | VLV"], symptom: "EXCHR", l2Summary: "HYD VLV HT EXCHR BY PASS" }, { component: ["HYD", "PASS | VLV"], symptom: "", l2Summary: "HYD VLV HT EXCHR BY PASS" },
+            // --- ATA 30 ---
+            { component: ["ICE DETECT"], symptom: "FAULT | INOP | MSG", l2Summary: "A-ICE DETECT FAULT" },
+            { component: ["A-ICE", "PRSOV"], symptom: "REGUL", l2Summary: "DM: A-ICE ENG PRSOV REGUL" },
+            { component: ["A-ICE", "WINDSHIELD"], symptom: "", l2Summary: "A-ICE WINDSHIELD HEATG" },
+            { component: ["A-ICE", "WING"], symptom: "", l2Summary: "A-ICE WING FAULT" },
             // --- ATA 32 ---
-            { component: "TIRE", symptom: "LOW", l2Summary: "TIRE PRESSURE LOW" }
+            { component: ["BRAKE | BRK", "NORM"], symptom: "", l2Summary: "BRAKES PART NORMAL BRAKE FAULT" },
+            { component: ["BRAKE | BRK", "PART A-SKID"], symptom: "FAULT", l2Summary: "BRAKES PART A-SKID FAULT" },
+            { component: ["BRAKE | BRK", "NORM"], symptom: "FAULT", l2Summary: "BRAKES PART NORMAL BRAKE FAULT" },
+            { component: ["BRAKE | BRK", "PART ALTN"], symptom: "FAULT", l2Summary: "BRAKES PART ALTN FAULT" },
+            { component: ["BRAKE | BRK", "EMER"], symptom: "FAULT", l2Summary: "EMER BRK FAULT" },
+            { component: ["BRAKE | BRK", "REMOTE", "BRK CTL"], symptom: "INPUT", l2Summary: "BRAKES REMOTE BRK CTL INPUT" },
+            { component: ["GEAR INDICATION SYS"], symptom: "MSG", l2Summary: 'EICAS MSG "GEAR INDICATION SYS" DISPLAYED' },
+            { component: "TIRE", symptom: "LOW", l2Summary: "TIRE PRESSURE LOW" }, 
+            { component: ["NOSE","WHEEL","TIRE"], symptom: "OUT", l2Summary: "NOSE WHEEL TIRE WORN OUT" },
+            { component: "BRAKE | BRK", symptom: ["AUTO","FAULT"], l2Summary: "BRAKES AUTO BRK FAULT" },
+            { component: ["BRAKE | BRK","TEMP","MONITORING"], symptom: "", l2Summary: "BRAKES TEMP MONITORING" }, 
+            { component: ["BRAKE | BRK","ALTN"], symptom: "RELEASE", l2Summary: "BRAKES ALTN BRK RELEASED" }, 
+            // --- ATA 34 ---
+            { component: ["NAV", "MFP", "TAT"], symptom: "", l2Summary: "NAV MFP TAT FAULT" },
+            { component: ["SURV", "ADS-B", "TRAFFIC"], symptom: "", l2Summary: "DM: SURV ADS-B TRAFFIC FAULT" },
+            { component: ["WXR ANT"], symptom: "DISPLAY", l2Summary: "'WXR ANT\" DISPLAYED ON ND" },
+            { component: ["RAD ALT"], symptom: "FAULT", l2Summary: "RADIO ALTIMETER FAULT" },
+            { component: ["GPS"], symptom: "FAULT", l2Summary: "GPS SYSTEM FAULT" },
+            { component: ["GPS2"], symptom: "FAULT", l2Summary: "GPS SYSTEM FAULT" },
+            { component: ["NAV", "GPS", "ECAM"], symptom: "FAULT", l2Summary: "NAV GPS FAULT on ECAM" },
+            { component: ["NAV", "ATC/XPDR", "ECAM"], symptom: "FAULT", l2Summary: "NAV ATC/XPDR 1 FAULT on ECAM" },
+            { component: ["SURV", "TCAS"], symptom: "FAULT", l2Summary: "DM: SURV TCAS FAULT" },
+            { component: ["SURV", "XPDR"], symptom: "FAULT", l2Summary: "DM: SURV XPDR FAULT" },
+            { component: ["A-ICE", "PROBE"], symptom: "HEATG", l2Summary: "PROBE HEATER FAULT" },
+            { component: ["GPS"], symptom: "INOP", l2Summary: "GPS SYSTEM FAULT" },
+            { component: ["TCAS"], symptom: "INTERMITTENT", l2Summary: "TCAS SYSTEM FAULT" },
+            { component: ["GPS"], symptom: "JAMMIN", l2Summary: "GPS SPOOFING AND JAMMING" },
+            { component: ["GPS"], symptom: "LOST", l2Summary: "GPS INTERFERENCE" },
+            { component: ["EICAS", "WINDSHEAR PREDICTIVE"], symptom: "MSG", l2Summary: 'EICAS MSG "WINDSHEAR PREDICTIVE" DISPLAYED' },
+            { component: ["EICAS", "WEATHER RADAR SYS"], symptom: "MSG", l2Summary: 'EICAS MSG "WEATHER RADAR SYS" DISPLAYED' },
+            { component: ["SGL", "SOURCE", "RAD ALT", "GPS"], symptom: "MSG", l2Summary: 'EICAS MSG "SGL SOURCE RAD ALT" DISPLAYED' },
+            { component: ["EICAS"], symptom: ["NO LAND", "MSG"], l2Summary: 'EICAS MSG "NO LAND" DISPLAYED' },
+            { component: ["ADS-B"], symptom: ["OUT", "DISPLAY"], l2Summary: 'EICAS MSG "ADS-B OUT ..." DISPLAYED' },
+            { component: ["NAV", "GPS"], symptom: ["SINGLE", "MSG"], l2Summary: 'EICAS MSG "NAV SINGLE GPS" DISPLAYED' },
+            { component: ["GPS"], symptom: ["SPOOFING"], l2Summary: "GPS SPOOFING AND JAMMING" },
+            { component: ["NAV", "GNSS"], symptom: ["REJECTED"], l2Summary: "NAV GNSS REJECTED BY IRS" }, { component: ["GNSS"], symptom: ["REJECTED"], l2Summary: "NAV GNSS REJECTED BY IRS" },
+            { component: ["NAV", "GNSS"], symptom: ["FAULT"], l2Summary: "NAV GNSS FAULT" },
+            { component: ["WXR ANT"], symptom: "INTERMITTENT", l2Summary: "WXR ANTENNA FAULT" },
+            { component: ["WXR"], symptom: "FAULT", l2Summary: "WXR FAULT" },{ component: ["WXR", "SURV"], symptom: "", l2Summary: "WXR FAULT" },
+            { component: ["WEATHER RADAR SYS"], symptom: "DISPLAY", l2Summary: 'EICAS MSG "WEATHER RADAR SYS" DISPLAYED' },
+            { component: ["ADS-B", "SURV","TRAFFIC"], symptom: "", l2Summary: "DM: SURV ADS-B TRAFFIC" }, { component: ["ENG","GA SOFT"], symptom: "", l2Summary: "DM: ENG GA SOFT" },
+            { component: ["TCAS", "SURV"], symptom: "FAULT", l2Summary: "DM: SURV TCAS FAULT" }, { component: ["XPDR", "SURV"], symptom: "FAULT", l2Summary: "DM: SURV XPDR FAULT" },
+            // --- ATA 36 ---
+            { component: ["ENG", "BLEED"], symptom: "", l2Summary: "AIR ENG BLEED FAULT" },
+            { component: ["AIR"], symptom: "LEAK, REDUNDANCY", l2Summary: "AIR LEAK DET REDUNDANCY" },
+            { component: ["AIR","APU","BLEED"], symptom: "FAULT", l2Summary: "AIR APU BLEED FAULT" },
+            { component: ["BLEED", "MONIT"], symptom: "FAULT", l2Summary: "BLEED MONIT SYS FAULT" },
+            // --- ATA 44 ---
+            { component: ["WIFI"], symptom: "INOP | NOT AVAIL", l2Summary: "WIFI FAULT" }, { component: ["WIFI"], symptom: "", l2Summary: "WIFI FAULT" },
+            { component: ["INTERPHONE"], symptom: "DEGRADED | FAULT | INOP", l2Summary: "INTERPHONE SYS FAULT" }, { component: ["HANDSET"], symptom: "", l2Summary: "HANDSET FAULT" },
+            // --- ATA 47 ---
+            { component: ["NITROGEN"], symptom: ["MSG | DISPLAY"], l2Summary: 'EICAS MSG "NITROGEN GENERATION SYS" DISPLAYED' },
+            // --- ATA 49 ---
+            { component: ["APU"], symptom: ["AUTO", "SHUTDOWN"], l2Summary: "APU AUTO SHUTDOWN" },
+            { component: ["APU", "FLAP"], symptom: "CLOSE", l2Summary: "APU FLAP CLOSED" },
+            { component: ["APU", "OIL"], symptom: "LOW", l2Summary: "APU LOW OIL LEVEL" },
+            { component: ["APU", "OIL","FILTER"], symptom: "", l2Summary: "DM: APU OIL FILTER" },
+            { component: ["APU", "OIL","SENSOR"], symptom: "", l2Summary: "APU OIL LEVEL SENSOR" },
+            // --- ATA 52 ---
+            { component: ["REFUEL", "PANEL", "DOOR"], symptom: "", l2Summary: "DOOR INDICATION FAULT" },
+            { component: ["DOOR"], symptom: "AVIONIC | AVNCS", l2Summary: "DOOR AVIONIC" },
+            { component: ["DOOR"], symptom: ["LOUD", "NOISE"], l2Summary: "LOUD NOISE AT DOOR" },
+            { component: ["EICAS", "DOOR"], symptom: "MSG", l2Summary: 'EICAS MSG "DOOR OPEN"' },
+            // --- ATA 56 ---
+            { component: ["WINDSHIELD | WINDOW"], symptom: "CLEAN | Dirty", l2Summary: "CLEANING WINDOWS" },
+            { component: ["WINDSHIELD"], symptom: "SOUND", l2Summary: "SOUND NEAR WINDOWS" },
+            // --- ATA 73 ---
+            { component: ["CTL SYS"], symptom: "FAULT", l2Summary: "ENG CTL SYS FAULT" }, { component: ["ENG", "CTRL"], symptom: "", l2Summary: "ENG CTL SYS FAULT" },
+            { component: ["ENG"], symptom: ["LONG TERM", "FAULT"], l2Summary: "DM: ENG LONG TERM MINOR FAULT" },
+            { component: ["EICAS", "ENG EEC"], symptom: ["MSG | DISPLAY"], l2Summary: 'EICAS MSG "ENG EEC" DISPLAYED' },
+            { component: ["ENG", "FUEL FILTER", "SENSOR"], symptom: ["MSG | DISPLAY"], l2Summary: 'EICAS MSG "ENG FUEL FILTER SENSOR" DISPLAYED' },
+            { component: ["ENG", "TURBINE", "CASE"], symptom: "COOLING", l2Summary: "ENG HP TURBINE CASE COOLING" },
+            // --- ATA 74 ---
+            { component: ["ENG", "IGNITOR"], symptom: ["MSG | DISPLAY"], l2Summary: 'EICAS MSG "ENG IGNITOR" DISPLAYED' },
+            { component: ["ENG", "IGN"], symptom: ["SINGLE | FAULT"], l2Summary: 'ENG SINGLE IGN' },
+            // --- ATA 77 ---
+            { component: ["ENG"], symptom: "SHORT TERM, FAULT", l2Summary: "DM: ENG SHORT TERM MINOR FAULT" }
         ];
 
-        // FUZZY CONFIG: Combined master list
         const masterFuzzyWords = [
             ...wordCategories.Component, 
             ...wordCategories.Symptom,
@@ -824,18 +806,7 @@
             ...wordCategories.Location
         ];
 
-        const flightPhases = {
-            "TAKEOFF": ["TAKEOFF", "T/O", "TO", "LIFT OFF"],
-            "CLIMB": ["CLIMB", "CLB", "ASCENT"],
-            "CRUISE": ["CRUISE", "CRZ", "FLT", "AIRBORNE", "LEVEL"],
-            "DESCENT": ["DESCENT", "DES", "DSC"],
-            "LANDING": ["LANDING", "LNDG", "TOUCHDOWN", "ROLLOUT"],
-            "TAXI": ["TAXI", "TXI", "PUSHBACK"],
-            "PARK": ["PARK", "RAMP", "GATE", "GROUND", "GND", "STATIONARY"]
-        };
-
         const actionKeywords = ["RESET", "REPLACED", "REPAIRED", "ADJUSTED", "DEFERRED", "INSPECTED", "SERVICED", "CLEANED", "LUBRICATED", "SECURED", "REMOVED"];
-
         const ataDescriptions = { "00": "Product - General", "05": "Scheduled/unscheduled maintenance", "06": "Dimensions and Areas", "07": "Lifting and Shoring", "08": "Leveling and weighing", "09": "Towing and Taxiing", "10": "Parking, Mooring, Storage", "11": "Placards and Markings", "12": "Servicing", "20": "Standard Practices - Airframe", "21": "Air Conditioning", "22": "Auto Flight", "23": "Communications", "24": "Electrical Power", "25": "Equipment/Furnishings", "26": "Fire Protection", "27": "Flight Controls", "28": "Fuel", "29": "Hydraulic Power", "30": "Ice and Rain Protection", "31": "Indicating/Recording Systems", "32": "Landing Gear", "33": "Lights", "34": "Navigation", "35": "Oxygen", "36": "Pneumatic", "38": "Water/Waste", "42": "Integrated Modular Avionics", "44": "Cabin Systems", "45": "Central Maintenance System", "46": "Information Systems", "47": "Inert Gas System", "49": "Airborne Auxiliary Power", "50": "Cargo/Accessory Compartments", "51": "Standard Practices - Structures", "52": "Doors", "53": "Fuselage", "54": "Nacelles / Pylons", "55": "Stabilizers", "56": "Windows", "57": "Wings", "70": "Standard Practices - Engine", "71": "Power Plant", "72": "Engine", "73": "Engine Fuel and Control", "74": "Ignition", "75": "Air", "76": "Engine Controls", "77": "Engine Indicating", "78": "Exhaust", "79": "Oil", "80": "Starting", "91": "Air Vehicle Wiring" };
 
         let rawData = [], processedData = [], currentFilteredData = [];
@@ -843,82 +814,83 @@
         let visibleColumns = new Set();
         let activeDropdown = null;
         let currentFleetLimit = 10;
-        let currentTrendFreq = 'Day'; // Default frequency
+        let currentTrendFreq = 'Day';
         
-        // V11.6 Pagination Globals
         let currentPage = 1;
-        const rowsPerPage = 2000;
+        const rowsPerPage = 200;
         let currentRenderData = []; 
 
-        // GLOBAL: Store data for Phrase Mining to enable lazy rendering
         let phraseDataStore = [];
-        let heatmapDataExport = [];
         let sankeyDataExport = [];
         
-        // GLOBAL FUZZY STATE
         let globalFuzzyMap = {}; 
         let currentFuzzySuggestions = []; 
         
-        // --- AUTO LOAD LOGIC ---
+        // --- Auto Load Function (Replaces Drag & Drop) ---
         window.onload = function() {
-            // Start fetching data immediately
+            document.getElementById('loading-screen').classList.remove('hidden');
+
             fetch('./data.csv')
                 .then(response => {
-                    if (!response.ok) throw new Error("Could not find data.csv");
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
                     return response.text();
                 })
                 .then(csvText => {
                     Papa.parse(csvText, {
-                        header: true,
+                        header: true, 
                         skipEmptyLines: true,
                         complete: res => {
                             rawData = res.data;
-                            if (rawData.length > 0) {
-                                analyzeData();
-                                document.getElementById('loading-screen').classList.add('hidden');
-                                document.getElementById('dashboard-ui').classList.remove('hidden');
-                                document.getElementById('fuzzy-trigger').classList.remove('hidden');
-                                runFuzzyMatching();
-                            } else {
-                                throw new Error("CSV file is empty");
+                            if (rawData.length === 0) {
+                                showError("data.csv is empty or not formatted correctly.");
+                                return;
                             }
+                            analyzeData();
+                            document.getElementById('loading-screen').classList.add('hidden');
+                            document.getElementById('dashboard-ui').classList.remove('hidden');
+                            document.getElementById('fuzzy-trigger').classList.remove('hidden');
+                        },
+                        error: err => {
+                            showError("Error parsing CSV data: " + err.message);
                         }
                     });
                 })
                 .catch(error => {
-                    const errDiv = document.getElementById('error-message');
-                    errDiv.classList.remove('hidden');
-                    errDiv.innerHTML = `Error: ${error.message}<br><br>Please make sure you have a file named 'data.csv' uploaded in the same GitHub repository.`;
+                    showError("Could not load data.csv. Please check if the file exists in the directory.");
+                    console.error("Fetch Error:", error);
                 });
         };
 
-        // --- NEW: DATA PREP MODAL LOGIC ---
+        function showError(msg) {
+            document.getElementById('loading-screen').classList.add('hidden');
+            document.getElementById('dashboard-ui').classList.add('hidden');
+            document.getElementById('error-screen').classList.remove('hidden');
+            document.getElementById('error-message').innerText = msg;
+        }
+
         function toggleFuzzySidebar() {
             const modal = document.getElementById('fuzzy-modal');
             modal.classList.toggle('hidden');
             modal.classList.toggle('flex');
             
-            // Render the master vocabulary list when the modal is opened
             if (!modal.classList.contains('hidden')) {
                 renderMasterVocabulary();
-                // Ensure Master Vocab tab is active by default
                 if (document.getElementById('modal-tab-vocab').classList.contains('hidden') && document.getElementById('modal-tab-audit').classList.contains('hidden')) {
                     switchModalTab('vocab');
                 }
             }
         }
 
-        // Modal Tab Switching
         function switchModalTab(tabId) {
             const tabs = ['vocab', 'audit'];
-            
             tabs.forEach(id => {
                 const content = document.getElementById(`modal-tab-${id}`);
                 const btn = document.getElementById(`modal-tab-btn-${id}`);
-                
                 if (content) {
                     content.classList.add('hidden');
-                    if (id === 'audit') content.classList.remove('flex'); // Remove flex when hidden to hide layout
+                    if (id === 'audit') content.classList.remove('flex');
                 }
                 if (btn) {
                     btn.classList.remove('border-purple-600', 'text-purple-700');
@@ -928,30 +900,25 @@
             
             const targetTab = document.getElementById(`modal-tab-${tabId}`);
             const targetBtn = document.getElementById(`modal-tab-btn-${tabId}`);
-            
             if (targetTab) {
                 targetTab.classList.remove('hidden');
-                if (tabId === 'audit') targetTab.classList.add('flex'); // Re-add flex for audit layout
+                if (tabId === 'audit') targetTab.classList.add('flex');
             }
             if (targetBtn) {
                 targetBtn.classList.add('border-purple-600', 'text-purple-700');
                 targetBtn.classList.remove('border-transparent', 'text-gray-500');
             }
-
-            // ถ้ากดเข้าแท็บ Audit ให้รันระบบสร้างตาราง+กราฟทันที
             if (tabId === 'audit') {
                 renderAuditTab();
             }
         }
 
         function renderMasterVocabulary() {
-            // Helper function to build list HTML
             const renderList = (elementId, array, countId) => {
                 document.getElementById(countId).innerText = array.length;
                 let html = '<ul class="divide-y divide-gray-100">';
-                // Sort alphabetically before rendering
                 [...array].sort().forEach(word => {
-                    html += `<li class="py-1.5 px-3 hover:bg-gray-100 text-gray-700 rounded transition">${word}</li>`;
+                    html += `<li class="py-1.5 px-3 hover:bg-gray-100 text-gray-700 rounded transition">${escapeHTML(word)}</li>`;
                 });
                 html += '</ul>';
                 document.getElementById(elementId).innerHTML = html;
@@ -962,26 +929,23 @@
             renderList('list-act', actionKeywords, 'count-act');
         }
 
-        // Lightweight JS Equivalent of Python's thefuzz (Levenshtein Distance)
         function calculateSimilarity(s1, s2) {
             let t1 = s1.replace(/\s+/g, '').toUpperCase();
             let t2 = s2.replace(/\s+/g, '').toUpperCase();
             if (t1 === t2) return 100;
             if (t1.length === 0 || t2.length === 0) return 0;
-            
             let matrix = [];
             for (let i = 0; i <= t2.length; i++) matrix[i] = [i];
             for (let j = 0; j <= t1.length; j++) matrix[0][j] = j;
-            
             for (let i = 1; i <= t2.length; i++) {
                 for (let j = 1; j <= t1.length; j++) {
                     if (t2.charAt(i-1) === t1.charAt(j-1)) {
                         matrix[i][j] = matrix[i-1][j-1];
                     } else {
                         matrix[i][j] = Math.min(
-                            matrix[i-1][j-1] + 1, // substitution
-                            matrix[i][j-1] + 1,   // insertion
-                            matrix[i-1][j] + 1    // deletion
+                            matrix[i-1][j-1] + 1, 
+                            matrix[i][j-1] + 1,   
+                            matrix[i-1][j] + 1    
                         );
                     }
                 }
@@ -991,67 +955,110 @@
             return Math.max(0, Math.round((1 - (distance / maxLength)) * 100));
         }
 
-        // Run silently in background without UI
         function runFuzzyMatching() {
-            const threshold = 77; // Fixed Threshold as requested
+            const threshold = 75; 
             const stopWords = new Set(["THE","AND","TO","OF","IN","IS","FOR","WITH","ON","AT","FROM","BY","NAME","AUTH","NO","DATE","TIME","REF","AMM","TASK","REV","ACTION","CHECKED","NOTED","FOUND","HAS","WAS","MSG"]);
             
-            setTimeout(() => {
-                let unknownWords = new Set();
-                
-                processedData.forEach(row => {
-                    if(row.category !== 'Tech') return;
-                    let txt = row.cleanComp;
-                    if(!txt) return;
-                    
-                    const words = txt.replace(/[^a-zA-Z0-9\/\-\s]/g, ' ').toUpperCase().split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w) && isNaN(w));
-                    
-                    words.forEach(w => {
-                        if (!masterFuzzyWords.includes(w) && !globalFuzzyMap[w]) {
-                            unknownWords.add(w);
-                        }
-                    });
-                });
-
-                currentFuzzySuggestions = [];
-
-                unknownWords.forEach(badWord => {
-                    let bestMatch = "";
-                    let bestScore = 0;
-                    
-                    masterFuzzyWords.forEach(masterWord => {
-                        let score = calculateSimilarity(badWord, masterWord);
-                        if(score > bestScore) {
-                            bestScore = score;
-                            bestMatch = masterWord;
-                        }
-                    });
-
-                    if(bestScore >= threshold && bestScore < 100) { 
-                        currentFuzzySuggestions.push({ original: badWord, suggested: bestMatch, score: bestScore });
+            // ลบ setTimeout ออก เพื่อบังคับให้ระบบประมวลผลคำผิดให้เสร็จก่อนส่งไป L2 Summary
+            let unknownWords = new Set();
+            processedData.forEach(row => {
+                if(row.category !== 'Tech') return;
+                let txt = row.cleanComp;
+                if(!txt) return;
+                const words = txt.replace(/[^a-zA-Z0-9\/\-\s]/g, ' ').toUpperCase().split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w) && isNaN(w));
+                words.forEach(w => {
+                    if (!masterFuzzyWords.includes(w) && !globalFuzzyMap[w]) {
+                        unknownWords.add(w);
                     }
                 });
+            });
 
-                currentFuzzySuggestions.sort((a,b) => b.score - a.score);
-            }, 50);
+            currentFuzzySuggestions = [];
+            unknownWords.forEach(badWord => {
+                let bestMatch = "";
+                let bestScore = 0;
+                masterFuzzyWords.forEach(masterWord => {
+                    let score = calculateSimilarity(badWord, masterWord);
+                    if(score > bestScore) {
+                        bestScore = score;
+                        bestMatch = masterWord;
+                    }
+                });
+                if(bestScore >= threshold && bestScore < 100) { 
+                    currentFuzzySuggestions.push({ original: badWord, suggested: bestMatch, score: bestScore });
+                }
+            });
+            currentFuzzySuggestions.sort((a,b) => b.score - a.score);
         }
 
-        // --- NEW: สมองส่วนกลางสำหรับประเมิน L2 Summary รองรับ AND / OR ---
-        function evaluateL2Summaries(compText, actText) {
-            const upperComp = (compText || "").toUpperCase();
-            const upperAct = (actText || "").toUpperCase();
-            const fullSearchTxt = upperComp + " " + upperAct; 
+        function extractConcepts(text) {
+            const upperTxt = (text || "").toUpperCase();
+            const stopWords = new Set(["THE","AND","TO","OF","IN","IS","FOR","WITH","ON","AT","FROM","BY","NAME","AUTH","NO","DATE","TIME","REF","AMM","TASK","REV","ACTION","CHECKED","NOTED","FOUND","HAS","WAS","MSG"]);
             
+            const wordsSet = new Set();
+            const foundSymp = [];
+            const foundComp = [];
+
+            masterFuzzyWords.forEach(mw => {
+                const escapedMw = mw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                if (new RegExp(`(^|[^A-Z0-9_])${escapedMw}([^A-Z0-9_]|$)`, 'i').test(upperTxt)) {
+                    wordsSet.add(mw.toUpperCase());
+                    const isSymp = wordCategories.Symptom.includes(mw);
+                    const item = { master: mw, original: mw, score: 100 };
+                    if (isSymp) {
+                        if (!foundSymp.some(x => x.master === mw)) foundSymp.push(item);
+                    } else {
+                        if (!foundComp.some(x => x.master === mw)) foundComp.push(item);
+                    }
+                }
+            });
+
+            const words = upperTxt.replace(/[^A-Z0-9\/\-\s]/g, ' ').split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w) && isNaN(w));
+            words.forEach(w => {
+                if (wordsSet.has(w)) return;
+                
+                let matchedMaster = null;
+                let matchScore = 0;
+
+                if (globalFuzzyMap[w]) {
+                    matchedMaster = globalFuzzyMap[w];
+                    matchScore = calculateSimilarity(w, matchedMaster);
+                } else {
+                    const suggestion = currentFuzzySuggestions.find(s => s.original === w);
+                    if (suggestion) {
+                        matchedMaster = suggestion.suggested;
+                        matchScore = suggestion.score;
+                    }
+                }
+
+                if (matchedMaster && !wordsSet.has(matchedMaster.toUpperCase())) {
+                    wordsSet.add(matchedMaster.toUpperCase());
+                    const isSymp = wordCategories.Symptom.includes(matchedMaster);
+                    const item = { master: matchedMaster, original: w, score: matchScore };
+                    if (isSymp) foundSymp.push(item);
+                    else foundComp.push(item);
+                }
+            });
+
+            return { wordsSet, foundSymp, foundComp };
+        }
+
+        function evaluateL2Summaries(extractedConcepts) {
             const l2Summaries = [];
             
+            // ดึงเฉพาะ Master word ที่ผ่านการคัดกรองมาแล้ว (ที่โชว์ในตาราง)
+            const extractedWords = [
+                ...(extractedConcepts.foundSymp || []),
+                ...(extractedConcepts.foundComp || [])
+            ].map(item => item.master.toUpperCase());
+
             const checkCondition = (condition) => {
                 if (!condition) return true;
-                
                 let andGroups = [];
+                
                 if (Array.isArray(condition)) {
                     andGroups = condition;
                 } else if (typeof condition === 'string' && condition.trim() !== '') {
-                    // ถ้าระบุเป็น string และใช้ลูกน้ำ (แต่ไม่มี |) ให้ถือว่าเป็น AND แบบเก่า
                     if (condition.includes(',') && !condition.includes('|')) {
                         andGroups = condition.split(',');
                     } else {
@@ -1061,14 +1068,14 @@
                     return true;
                 }
 
-                // ทุกเงื่อนไขใน Array ต้องเป็นจริง (AND)
+                // ต้องผ่านทุก Group (AND logic)
                 return andGroups.every(group => {
-                    // ในแต่ละเงื่อนไข สามารถใช้ | เพื่อแบ่งเป็น OR ได้
-                    const orTerms = String(group).split('|').map(s => s.trim()).filter(s => s);
+                    // ในแต่ละ Group ถ้ามีเครื่องหมาย | ให้แบ่งเป็น OR logic
+                    const orTerms = String(group).split('|').map(s => s.trim().toUpperCase()).filter(s => s);
                     if (orTerms.length === 0) return true;
                     
-                    // เจอคำใดคำหนึ่งถือว่าผ่าน (OR)
-                    return orTerms.some(term => fullSearchTxt.includes(term.toUpperCase()));
+                    // ขอแค่มีคำใดคำหนึ่งปรากฏในรายการที่สกัดได้ (OR logic)
+                    return orTerms.some(term => extractedWords.includes(term));
                 });
             };
 
@@ -1078,175 +1085,92 @@
                 const locMatch = checkCondition(rule.location);
 
                 if (compMatch && sympMatch && locMatch) {
-                    // ป้องกัน rule ว่างเปล่า
                     if ((rule.component || rule.symptom || rule.location) && !l2Summaries.includes(rule.l2Summary)) {
                         l2Summaries.push(rule.l2Summary);
                     }
                 }
             });
-
             return l2Summaries;
         }
 
-        // NEW: ฟังก์ชันสร้างตารางและกราฟสำหรับหน้า Audit Trail
         function renderAuditTab() {
-            const stopWords = new Set(["THE","AND","TO","OF","IN","IS","FOR","WITH","ON","AT","FROM","BY","NAME","AUTH","NO","DATE","TIME","REF","AMM","TASK","REV","ACTION","CHECKED","NOTED","FOUND","HAS","WAS","MSG"]);
             const phraseCounts = {};
             const auditRows = [];
-
-            // ตรวจสอบข้อมูลทั้งหมดที่เป็น Tech
             const techData = currentFilteredData.filter(d => d.category === 'Tech');
 
             techData.forEach(row => {
-                let txt = row['Complaint Text'] || "";
+                const txt = row['Complaint Text'] || "";
                 if(!txt) return;
 
-                const cleanTxt = txt.replace(/(Name\s*:|Auth\s*no\.?\s*:|Created\s*by\s*:|Action\s*STA\s*:|\-{3,})[\s\S]*/gi, "");
-                const upperTxt = cleanTxt.toUpperCase();
+                const cleanTxt = txt.replace(/(Name\s*:|Auth\s*no\.?\s*:|Created\s*by\s*:|Action\s*STA\s*:|\-{3,})[\s\S]*/gi, "").trim();
+                const concepts = extractConcepts(cleanTxt);
 
-                const foundSymp = [];
-                const foundComp = [];
-                const rowWordsFound = new Set(); // ป้องกันการนับคำซ้ำซ้อนในประโยคเดียวกันบนกราฟ
-
-                // 1. สแกนหาคำศัพท์แบบตรงตัว (รองรับกลุ่มคำแบบ Multi-word เช่น "AUTO CTL")
-                masterFuzzyWords.forEach(mw => {
-                    // หลีกเลี่ยง Regex แตกด้วยการ Escape ตัวอักษรพิเศษ
-                    const escapedMw = mw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    if (new RegExp(`\\b${escapedMw}\\b`, 'i').test(upperTxt)) {
-                        rowWordsFound.add(mw);
-                        
-                        const isSymp = wordCategories.Symptom.includes(mw);
-                        const item = { master: mw, original: mw, score: 100 };
-                        
-                        if (isSymp) {
-                            if (!foundSymp.some(x => x.master === mw)) foundSymp.push(item);
-                        } else {
-                            // ให้คำทั้งหมดที่เหลือ(รวม Component, Location, Event ฯลฯ) อยู่ใน foundComp เพื่อแสดงใน Audit
-                            if (!foundComp.some(x => x.master === mw)) foundComp.push(item);
-                        }
-                    }
-                });
-
-                // 2. สแกนแบบ Fuzzy สำหรับคำเดี่ยวๆ ที่เหลือ
-                const words = upperTxt.replace(/[^A-Z0-9\/\-\s]/g, ' ').split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w) && isNaN(w));
-
-                words.forEach((w) => {
-                    // ถ้าหาเจอแบบตรงตัวไปแล้วข้ามเลย
-                    if (rowWordsFound.has(w)) return;
-
-                    let matchedMaster = null;
-                    let matchScore = 0;
-
-                    // ถ้าระบบพบว่าคำนี้ถูก Map ไว้ด้วย Fuzzy Mapping (User Saved)
-                    if (globalFuzzyMap[w]) {
-                        matchedMaster = globalFuzzyMap[w];
-                        matchScore = calculateSimilarity(w, matchedMaster); // คำนวณ%ให้เห็นสดๆ
-                    }
-                    // ดึง % อัตโนมัติจากหน้าต่างสแกน โดยไม่ต้องรอ Save (เกณฑ์ >= 77%)
-                    else {
-                        const suggestion = currentFuzzySuggestions.find(s => s.original === w);
-                        if (suggestion) {
-                            matchedMaster = suggestion.suggested;
-                            matchScore = suggestion.score;
-                        }
-                    }
-
-                    // ถ้าเจอคำเข้าข่ายให้แยกเป็น Symptom หรือ Component
-                    if (matchedMaster && !rowWordsFound.has(matchedMaster)) {
-                        rowWordsFound.add(matchedMaster);
-
-                        const isSymp = wordCategories.Symptom.includes(matchedMaster);
-                        const item = { master: matchedMaster, original: w, score: matchScore };
-                        
-                        if (isSymp) foundSymp.push(item);
-                        else foundComp.push(item);
-                    }
-                });
-
-                // ดึงค่า L2 Summary ที่คำนวณไว้แล้วตั้งแต่ analyzeData มาใช้เลย (หรือประเมินใหม่จากสมองส่วนกลาง)
-                const finalL2Summaries = row.l2SummariesArr || evaluateL2Summaries(row.cleanComp, row['Activity Text']);
-
-                // เก็บลงตาราง (โชว์ทุกแถวแม้จะไม่มีคำก็ให้มันใส่ขีด -)
                 auditRows.push({
                     acreg: row.ACREG || '-',
                     ata: row['Main ATA'] || row.ataLabel || '-',
                     date: row['Complaint Date'] || '-',
                     noti: row['Notification'] || '-',
                     text: cleanTxt,
-                    symptoms: foundSymp,
-                    components: foundComp,
-                    l2Summaries: finalL2Summaries // L2 Summary Standards
+                    symptoms: concepts.foundSymp,
+                    components: concepts.foundComp,
+                    l2Summaries: row.l2SummariesArr 
                 });
 
-                // นำคำที่เจอแบบ Unique ไปนับลงตารางสรุป
-                rowWordsFound.forEach(masterWord => {
+                concepts.wordsSet.forEach(masterWord => {
                     phraseCounts[masterWord] = (phraseCounts[masterWord] || 0) + 1;
                 });
             });
 
-            // 1. วาดตาราง Word Frequency สรุปด้านซ้าย
             const sortedCounts = Object.entries(phraseCounts).sort((a,b) => b[1] - a[1]);
             let summaryHtml = '';
-            
             if (sortedCounts.length === 0) {
                 summaryHtml = '<tr><td colspan="2" class="text-center py-6 text-gray-400 font-bold">No dictionary words found</td></tr>';
             } else {
                 sortedCounts.forEach(([word, count]) => {
-                    // แยกสีกรอบของคำศัพท์ว่าเป็น Symptom หรือ Component
                     let badgeClass = "bg-gray-100 text-gray-700";
                     if (wordCategories.Symptom.includes(word)) badgeClass = "bg-rose-100 text-rose-800";
                     else if (wordCategories.Component.includes(word)) badgeClass = "bg-indigo-100 text-indigo-800";
-                    
                     summaryHtml += `
                         <tr class="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0">
-                            <td class="px-4 py-2 font-bold text-xs"><span class="${badgeClass} px-2 py-0.5 rounded shadow-sm">${word}</span></td>
+                            <td class="px-4 py-2 font-bold text-xs"><span class="${badgeClass} px-2 py-0.5 rounded shadow-sm">${escapeHTML(word)}</span></td>
                             <td class="px-4 py-2 text-center font-bold text-gray-700 text-xs">${count}</td>
                         </tr>
                     `;
                 });
             }
             const summaryTbody = document.getElementById('audit-summary-tbody');
-            if(summaryTbody) {
-                summaryTbody.innerHTML = summaryHtml;
-            }
+            if(summaryTbody) summaryTbody.innerHTML = summaryHtml;
 
-            // 2. วาดตาราง Audit Trail
             let tbodyHtml = '';
-            
-            // นำแถวที่มีการจับคู่คำศัพท์ขึ้นมาก่อน เพื่อให้เห็นการทำงานของระบบ
             auditRows.sort((a,b) => (b.symptoms.length + b.components.length) - (a.symptoms.length + a.components.length));
             
-            auditRows.slice(0, 1000).forEach((r, idx) => { // Limit แสดงผล 1000 แถวเพื่อไม่ให้ค้าง
-                let highlightedText = r.text;
-                
-                // ไฮไลท์คำที่ตรวจเจอใน Complaint Text แบบชัดเจน
+            auditRows.slice(0, 1000).forEach((r, idx) => {
+                let highlightedText = escapeHTML(r.text);
                 const allFound = [...r.symptoms, ...r.components];
                 allFound.forEach(item => {
-                    const regex = new RegExp(`\\b${item.original}\\b`, 'gi');
-                    // ใช้ CSS Class ไฮไลท์เดิม (เล็กเท่าเดิมตัวอักษรสีดำ) แต่แยกสีพื้นหลังตาม %
+                    const safeItem = escapeHTML(item.original);
+                    const regex = new RegExp(`\\b${safeItem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
                     const bgClass = item.score === 100 ? 'bg-yellow-200' : 'bg-orange-400';
-                    highlightedText = highlightedText.replace(regex, `<span class="${bgClass} text-black px-1 rounded font-bold">${item.original}</span>`);
+                    highlightedText = highlightedText.replace(regex, `<span class="${bgClass} text-black px-1 rounded font-bold">${safeItem}</span>`);
                 });
 
-                // ฟังก์ชันสำหรับจัดรูปคอลัมน์ Symptom และ Component ให้เป็น Badge สวยงาม
                 const renderCell = (arr, type) => {
                     if (arr.length === 0) return '<div class="text-center text-gray-400">-</div>';
                     return arr.map(item => {
                         let scoreClass = item.score === 100 ? 'text-emerald-600' : 'text-amber-500';
                         let textColor = type === 'symp' ? 'text-rose-700' : 'text-indigo-700';
                         return `<div class="mb-1.5 flex items-center justify-between bg-white px-2 py-1 rounded border shadow-sm">
-                                    <span class="font-bold ${textColor}">${item.master}</span> 
+                                    <span class="font-bold ${textColor}">${escapeHTML(item.master)}</span> 
                                     <span class="${scoreClass} font-bold text-[10px] bg-gray-50 px-1.5 py-0.5 rounded ml-2">${item.score}%</span>
                                 </div>`;
                     }).join('');
                 };
 
-                // NEW: ฟังก์ชันสำหรับเรนเดอร์ L2 Summary Badge
                 const renderL2SummaryCell = (arr) => {
-                    if (arr.length === 0) return '<div class="text-center text-gray-400">-</div>';
+                    if (!arr || arr.length === 0) return '<div class="text-center text-gray-400">-</div>';
                     return arr.map(text => {
                         return `<div class="mb-1.5 flex items-center justify-center bg-white px-2 py-1.5 rounded border border-teal-200 shadow-sm">
-                                    <span class="font-bold text-teal-700 text-[10px] text-center uppercase tracking-wide">${text}</span> 
+                                    <span class="font-bold text-teal-700 text-[10px] text-center uppercase tracking-wide">${escapeHTML(text)}</span> 
                                 </div>`;
                     }).join('');
                 };
@@ -1254,10 +1178,10 @@
                 tbodyHtml += `
                     <tr class="hover:bg-gray-50 transition-colors border-b border-gray-100">
                         <td class="px-4 py-3 font-bold text-xs text-gray-500 text-center">${idx + 1}</td>
-                        <td class="px-4 py-3 font-bold text-xs text-gray-700">${r.acreg}</td>
-                        <td class="px-4 py-3 text-gray-500 text-xs truncate max-w-[100px]" title="${r.ata}">${r.ata}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-600">${r.date}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-600">${r.noti}</td>
+                        <td class="px-4 py-3 font-bold text-xs text-gray-700">${escapeHTML(r.acreg)}</td>
+                        <td class="px-4 py-3 text-gray-500 text-xs truncate max-w-[100px]" title="${escapeHTML(r.ata)}">${escapeHTML(r.ata)}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-600">${escapeHTML(r.date)}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-600">${escapeHTML(r.noti)}</td>
                         <td class="px-4 py-3 break-words min-w-[250px] max-w-[400px] leading-relaxed text-xs text-gray-700">${highlightedText}</td>
                         <td class="px-3 py-2 bg-rose-50/30 border-l border-rose-100 align-top w-32">${renderCell(r.symptoms, 'symp')}</td>
                         <td class="px-3 py-2 bg-indigo-50/30 border-l border-indigo-100 align-top w-32">${renderCell(r.components, 'comp')}</td>
@@ -1266,21 +1190,15 @@
                 `;
             });
             const auditTbody = document.getElementById('audit-tbody');
-            if(auditTbody) {
-                auditTbody.innerHTML = tbodyHtml;
-            }
-            
-            // เก็บข้อมูลเผื่อส่งออก Excel
+            if(auditTbody) auditTbody.innerHTML = tbodyHtml;
             window.currentAuditData = auditRows;
         }
 
-        // NEW: ส่งออก Excel จากแท็บ Audit
         function exportAuditData() {
             if (!window.currentAuditData || window.currentAuditData.length === 0) {
                 alert("No audit data to export.");
                 return;
             }
-            
             const formatExport = (arr) => {
                 if(arr.length === 0) return '-';
                 return arr.map(item => `${item.master || item.text} (${item.score}%)`).join(', ');
@@ -1295,12 +1213,11 @@
                 'Original Complaint Text': r.text,
                 'Symptom (Match %)': formatExport(r.symptoms),
                 'Component (Match %)': formatExport(r.components),
-                'L2 Standard Summary': r.l2Summaries.length > 0 ? r.l2Summaries.join(', ') : '-'
+                'L2 Standard Summary': r.l2Summaries && r.l2Summaries.length > 0 ? r.l2Summaries.join(', ') : '-'
             }));
             exportToExcel(exportData, 'Text_Mining_Audit_Trail');
         }
 
-        // --- 3. BUSINESS LOGIC (FLEET MAPPING & PARSING) ---
         function getFleetInfo(reg) {
             if (!reg) return { model: "Unknown", type: "Unknown" };
             reg = reg.toUpperCase().trim();
@@ -1339,7 +1256,6 @@
             return `<span class="${colorClass} text-xs font-medium mr-2 px-2.5 py-0.5 rounded border border-${colorClass.split('-')[1]}-400">${status}</span>`;
         }
 
-        // CORE DATA PROCESSING
         function analyzeData() {
             processedData = rawData.map(row => {
                 const date = parseDate(row['Complaint Date']);
@@ -1353,10 +1269,8 @@
                 let techInfo = "";
                 let pureComplaint = fullComplaint;
                 let pureActivity = fullActivity;
-                let activityDetails = ""; // ตัวแปรสำหรับเก็บข้อมูลที่แยกออกมาใหม่
+                let activityDetails = ""; 
                 
-                // Regex for cleaning technician info
-                // Updated Regex to handle "Auth no. :", "Action STA :", and missing spaces
                 const cleanRegex = /(Name\s*:|Auth\s*no\.?\s*:|Created\s*by\s*:|Action\s*STA\s*:|\-{3,})[\s\S]*/i;
                 
                 const compSplitMatch = fullComplaint.match(cleanRegex);
@@ -1365,44 +1279,37 @@
                     pureComplaint = fullComplaint.substring(0, compSplitMatch.index).trim();
                 }
 
-                // สำหรับ Activity Text (แยกข้อความและนำไปจัดฟอร์แมตใหม่)
                 const actSplitMatch = fullActivity.match(cleanRegex);
                 if (actSplitMatch) {
                     pureActivity = fullActivity.substring(0, actSplitMatch.index).trim();
                     let rawExtracted = actSplitMatch[0].trim();
-                    
-                    // จัดฟอร์แมตข้อมูลโดยการปัดขึ้นบรรทัดใหม่
                     rawExtracted = rawExtracted
                         .replace(/(Auth\s*no\.?\s*:)/gi, '\n$1')
                         .replace(/(Action\s*STA\s*:)/gi, '\n$1')
                         .replace(/(DATE\s*\&\s*TIME\s*:)/gi, '\n$1')
                         .replace(/(Name\s*:)/gi, '\n$1')
                         .replace(/(Created\s*by\s*:)/gi, '\n$1');
-                    
-                    // ลบช่องว่างส่วนเกินและเคลียร์บรรทัดว่างให้สวยงาม
                     activityDetails = rawExtracted.replace(/\n\s+/g, '\n').trim().replace(/^\n+/, '');
                 }
 
                 const maintStatus = getMaintenanceStatus(row['Activity Code Text']);
 
-                // จัดฟอร์แมต Technician Info ให้สวยงามและขึ้นบรรทัดใหม่
                 let finalTechInfo = techInfo || row['Technician Info'] || "";
                 finalTechInfo = finalTechInfo
-                    .replace(/\s*-{3,}\s*/g, '\n') // เปลี่ยนเส้นประยาวๆ ให้เป็นการขึ้นบรรทัดใหม่
-                    .replace(/(Created\s*by\s*:)/gi, '\n$1') // บังคับให้ Created by ขึ้นบรรทัดใหม่เสมอ
-                    .replace(/(\S)\s*(Auth\s*no\.?\s*:)/gi, '$1  $2') // ขยับให้มีช่องว่าง 2 เคาะหน้าคำว่า Auth no. เพื่อความสวยงาม
-                    .replace(/\n\s+/g, '\n') // ลบช่องว่างที่อยู่ต้นบรรทัดใหม่
-                    .replace(/\n+/g, '\n')   // ลบบรรทัดว่างที่ซ้อนกัน
+                    .replace(/\s*-{3,}\s*/g, '\n')
+                    .replace(/(Created\s*by\s*:)/gi, '\n$1')
+                    .replace(/(\S)\s*(Auth\s*no\.?\s*:)/gi, '$1  $2')
+                    .replace(/\n\s+/g, '\n')
+                    .replace(/\n+/g, '\n')
                     .trim();
 
-                // สร้าง Object แถวข้อมูลใหม่ โดยควบคุมลำดับคอลัมน์ให้ Activity Text (Detail) อยู่ติดกับ Activity Text
                 let newRow = {};
                 for (let key in row) {
                     if (key === 'Complaint Text') {
                         newRow['Complaint Text'] = pureComplaint;
                     } else if (key === 'Activity Text') {
                         newRow['Activity Text'] = pureActivity;
-                        newRow['Activity Text (Detail)'] = activityDetails; // แทรกคอลัมน์ใหม่ไว้ข้างๆ
+                        newRow['Activity Text (Detail)'] = activityDetails;
                     } else if (key === 'Complaint Date') {
                         newRow['Complaint Date'] = date ? formatDate(date) : row['Complaint Date'];
                     } else if (key === 'Technician Info') {
@@ -1412,7 +1319,6 @@
                     }
                 }
                 
-                // Fallbacks กรณีไฟล์ต้นฉบับไม่มีคอลัมน์เหล่านี้
                 if (!('Activity Text' in row)) {
                     newRow['Activity Text'] = pureActivity;
                     newRow['Activity Text (Detail)'] = activityDetails;
@@ -1431,34 +1337,41 @@
                 newRow.acModel = fleetInfo.model;
                 newRow.acType = fleetInfo.type;
 
-                // --- NEW: ย้ายการสแกน L2 Summary มาคำนวณไว้ที่นี่เลย ---
-                const l2Summaries = evaluateL2Summaries(newRow.cleanComp, pureActivity);
-                newRow.l2SummariesArr = l2Summaries;
-                newRow.l2SummaryText = l2Summaries.length > 0 ? l2Summaries.join(', ') : 'General / Uncategorized';
-
                 return newRow;
             });
-            // Sort by Date Ascending
+
+            runFuzzyMatching();
+
+            processedData.forEach(row => {
+                if (row.category === 'Tech') {
+                    const concepts = extractConcepts(row.cleanComp);
+                    const l2Summaries = evaluateL2Summaries(concepts);
+                    row.l2SummariesArr = l2Summaries;
+                    row.l2SummaryText = l2Summaries.length > 0 ? l2Summaries.join(', ') : 'General / Uncategorized';
+                    row.extractedConcepts = concepts; 
+                } else {
+                    row.l2SummariesArr = [];
+                    row.l2SummaryText = 'General / Uncategorized';
+                    row.extractedConcepts = { wordsSet: new Set(), foundSymp: [], foundComp: [] };
+                }
+            });
+
             processedData.sort((a,b) => (a.pDate && b.pDate) ? a.pDate - b.pDate : 0);
-            
             initFilters();
             initColumnSelector(); 
             applyFilters(); 
             
-            // Set initial history state
             if (!history.state) {
                 history.replaceState({ view: 'overview', isDrilldown: false }, '', '#overview');
             }
         }
 
         function drilldownView(subset, titleText) {
-            // Push state to browser history so 'Back' button works
             history.pushState({ view: 'rawdata', isDrilldown: true }, '', '#drilldown');
-            switchTab('rawdata', true); // Pass true to prevent double pushing
-            
-            currentPage = 1; // Reset pagination
+            switchTab('rawdata', true);
+            currentPage = 1; 
             renderRawTable(subset);
-            document.getElementById('raw-count').innerHTML = `<span class="text-blue-600 font-bold"><i class="fa-solid fa-filter mr-1"></i>Drilldown: ${titleText} (${subset.length} rows)</span> <button onclick="history.back()" class="ml-2 text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded text-gray-700"><i class="fa-solid fa-arrow-left mr-1"></i>Go Back</button>`;
+            document.getElementById('raw-count').innerHTML = `<span class="text-blue-600 font-bold"><i class="fa-solid fa-filter mr-1"></i>Drilldown: ${escapeHTML(titleText)} (${subset.length} rows)</span> <button onclick="history.back()" class="ml-2 text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded text-gray-700"><i class="fa-solid fa-arrow-left mr-1"></i>Go Back</button>`;
         }
         
         function searchTable() {
@@ -1468,7 +1381,6 @@
                 renderRawTable(currentFilteredData);
                 return;
             }
-            // Real-time Table Filter
             const searchResults = currentFilteredData.filter(row => {
                 return Object.values(row).some(val => 
                     String(val).toLowerCase().includes(query)
@@ -1477,7 +1389,6 @@
             renderRawTable(searchResults, query); 
         }
 
-        // --- 4. FILTERS & INTERACTIVITY ---
         function toggleDropdown(id, event) {
             event.stopPropagation();
             const el = document.getElementById(id);
@@ -1513,7 +1424,7 @@
             let html = `<div class="ms-search"><input type="text" placeholder="Search..." class="w-full text-xs border p-1 rounded" onkeyup="filterOptions(this)"></div>`;
             html += `<div class="ms-option" onclick="toggleSelectAll('${id}', event)"><input type="checkbox" class="ms-checkbox" value="ALL"><span class="text-sm font-bold text-blue-600">Select All</span></div>`;
             sortedOptions.forEach(opt => {
-                html += `<div class="ms-option" onclick="toggleOption(this, '${id}', event)"><input type="checkbox" class="ms-checkbox" value="${opt}"><span class="text-sm">${opt}</span></div>`;
+                html += `<div class="ms-option" onclick="toggleOption(this, '${id}', event)"><input type="checkbox" class="ms-checkbox" value="${escapeHTML(opt)}"><span class="text-sm">${escapeHTML(opt)}</span></div>`;
             });
             container.innerHTML = html;
             updateButtonLabel(id);
@@ -1599,7 +1510,6 @@
             const sCats = getSelectedValues('ms-cat');
             const sStatus = getSelectedValues('ms-status');
             
-            // OPTIMIZED DATE FILTER: Set times to cover full day (00:00 to 23:59)
             let dStart = null;
             if (document.getElementById('filter-date-start').value) {
                 dStart = new Date(document.getElementById('filter-date-start').value);
@@ -1638,51 +1548,43 @@
         function updateDashboard(data) {
             renderKPIs(data);
             renderTrend(data); 
-            
-            // Explicitly call chart functions (Decoupled in V11.27)
             renderCategoryChart(data); 
             renderStatusChart(data);
-
             renderFleetHealth(data);
             renderFaultCodes(data);
             runNgramAnalysis(data);
             renderChronic(data);
             renderMatrix(data); 
             renderProblemStatement(data);
-            
-            // NEW: Update BOTH Summary Tables
             renderOriginalComplaintSummary(data); 
             renderL2ComplaintSummary(data); 
-            
             renderRawTable(data);
             renderTop5Cards(data); 
         }
 
-        // --- NEW: COMPLAINT SUMMARY RENDERER (Original Logic) ---
         function renderOriginalComplaintSummary(data) {
             const techData = data.filter(d => d.category === 'Tech');
             const summaryData = {};
 
-            // Grouping Logic: ATA -> Model -> Reg
             techData.forEach(d => {
                 const ata = d.ataLabel && d.ataLabel !== "Unknown" ? d.ataLabel : "Unknown ATA";
                 const model = d.acModel || "Unknown";
                 const reg = d.ACREG || "Unknown";
                 
-                const compDate = d['Complaint Date'] ? `<span class="text-gray-400 text-xs mr-2">[${d['Complaint Date']}]</span>` : "";
-                const compHtml = compDate + (d.cleanComp || d['Complaint Text'] || "-");
+                const compDate = d['Complaint Date'] ? `<span class="text-gray-400 text-xs mr-2">[${escapeHTML(d['Complaint Date'])}]</span>` : "";
+                const compHtml = compDate + escapeHTML(d.cleanComp || d['Complaint Text'] || "-");
                 
-                // ดึงข้อมูล Activity มาเตรียมไว้ทำ Tooltip โชว์ตอนเอาเม้าส์ชี้
-                const actText = d['Activity Text'] || "-";
-                const actCode = d['Activity Code Text'] || "-";
+                const notiText = escapeHTML(d['Notification'] || "-");
+                const actText = escapeHTML(d['Activity Text'] || "-");
+                const actCode = escapeHTML(d['Activity Code Text'] || "-");
 
                 if (!summaryData[ata]) summaryData[ata] = {};
                 if (!summaryData[ata][model]) summaryData[ata][model] = {};
                 if (!summaryData[ata][model][reg]) summaryData[ata][model][reg] = [];
 
-                // เก็บเป็น Object แทน String ธรรมดา เพื่อให้ดึง Activity ไปใช้ตอนสร้างตารางได้
                 summaryData[ata][model][reg].push({
                     displayHtml: compHtml,
+                    notification: notiText,
                     activityText: actText,
                     activityCode: actCode
                 });
@@ -1693,7 +1595,7 @@
 
             sortedATAs.forEach(ata => {
                 html += `<div class="mb-8">`;
-                html += `<h3 class="font-bold text-lg text-slate-800 mb-3 border-l-4 border-blue-500 pl-3">${ata}</h3>`;
+                html += `<h3 class="font-bold text-lg text-slate-800 mb-3 border-l-4 border-blue-500 pl-3">${escapeHTML(ata)}</h3>`;
                 html += `<div class="overflow-hidden bg-white rounded-lg shadow-sm border border-gray-200">`;
                 html += `<table class="w-full text-sm text-left">`;
                 html += `<thead class="bg-slate-50 text-gray-700 uppercase text-xs border-b border-gray-200">
@@ -1719,19 +1621,18 @@
                         complaints.forEach((compObj, compIdx) => {
                             html += `<tr class="hover:bg-blue-50/30 transition-colors">`;
                             if (regIdx === 0 && compIdx === 0) {
-                                html += `<td class="px-4 py-3 border-r border-b border-gray-200 font-bold text-gray-800 align-top bg-white" rowspan="${modelRowCount}">${model}</td>`;
+                                html += `<td class="px-4 py-3 border-r border-b border-gray-200 font-bold text-gray-800 align-top bg-white" rowspan="${modelRowCount}">${escapeHTML(model)}</td>`;
                             }
                             if (compIdx === 0) {
-                                html += `<td class="px-4 py-3 border-r border-b border-gray-200 font-semibold text-blue-700 align-top bg-white" rowspan="${regRowCount}">${reg}</td>`;
+                                html += `<td class="px-4 py-3 border-r border-b border-gray-200 font-semibold text-blue-700 align-top bg-white" rowspan="${regRowCount}">${escapeHTML(reg)}</td>`;
                             }
                             
-                            // จัดเตรียมข้อมูลสำหรับ Custom Tooltip (ป้องกันข้อผิดพลาดกรณีข้อมูลไม่ใช่ String)
+                            const safeNoti = String(compObj.notification || "-").replace(/"/g, '&quot;');
                             const safeActText = String(compObj.activityText || "-").replace(/"/g, '&quot;');
                             const safeActCode = String(compObj.activityCode || "-").replace(/"/g, '&quot;');
                             
-                            // เปลี่ยนจาก hover เป็น Click โชว์ Tooltip ทันที และเอาไอคอนมือชี้ออก
                             html += `<td class="px-4 py-3 text-gray-700 border-b border-gray-100 leading-relaxed cursor-pointer relative group hover:bg-blue-50" 
-                                         data-act="${safeActText}" data-code="${safeActCode}"
+                                         data-noti="${safeNoti}" data-act="${safeActText}" data-code="${safeActCode}"
                                          onclick="showActionTooltip(event, this)">
                                          <div class="w-full truncate max-w-2xl text-wrap" style="white-space: normal;">${compObj.displayHtml}</div>
                                      </td>`;
@@ -1748,16 +1649,14 @@
             document.getElementById('summary-original-content').innerHTML = html;
         }
 
-        // --- NEW: COMPLAINT SUMMARY RENDERER (L2 Drilldown Logic) ---
         function renderL2ComplaintSummary(data) {
             const techData = data.filter(d => d.category === 'Tech');
             const summaryData = {};
 
-            // 1. Assign L2 Summary and Group Logic: ATA -> Model -> L2 Summary -> Reg
             techData.forEach(d => {
                 const ata = d.ataLabel && d.ataLabel !== "Unknown" ? d.ataLabel : "Unknown ATA";
                 const model = d.acModel || "Unknown";
-                const l2Text = d.l2SummaryText; // ดึงค่าที่คำนวณไว้แล้วตั้งแต่ analyzeData
+                const l2Text = d.l2SummaryText; 
                 const reg = d.ACREG || "Unknown";
 
                 if (!summaryData[ata]) summaryData[ata] = {};
@@ -1768,13 +1667,12 @@
                 summaryData[ata][model][l2Text].count++;
             });
 
-            // 2. Render HTML
             let html = '';
             const sortedATAs = Object.keys(summaryData).sort();
 
             sortedATAs.forEach(ata => {
                 html += `<div class="mb-8">`;
-                html += `<h3 class="font-bold text-lg text-teal-800 mb-3 border-l-4 border-teal-500 pl-3">${ata}</h3>`;
+                html += `<h3 class="font-bold text-lg text-teal-800 mb-3 border-l-4 border-teal-500 pl-3">${escapeHTML(ata)}</h3>`;
                 html += `<div class="overflow-hidden bg-white rounded-lg shadow-sm border border-gray-200">`;
                 html += `<table class="w-full text-sm text-left">`;
                 html += `<thead class="bg-slate-50 text-gray-700 uppercase text-xs border-b border-gray-200">
@@ -1801,28 +1699,25 @@
                         html += `<tr class="hover:bg-teal-50/30 transition-colors">`;
                         
                         if (l2Idx === 0) {
-                            html += `<td class="px-4 py-3 border-r border-b border-gray-200 font-bold text-gray-800 align-top bg-white" rowspan="${modelRowCount}">${model}</td>`;
+                            html += `<td class="px-4 py-3 border-r border-b border-gray-200 font-bold text-gray-800 align-top bg-white" rowspan="${modelRowCount}">${escapeHTML(model)}</td>`;
                         }
                         
                         const isOther = l2 === 'General / Uncategorized';
-                        // ปรับแก้ให้ General / Uncategorized สามารถคลิกได้ (แสดงเป็นสีเทาแต่จะเปลี่ยนเป็นสีน้ำเงินเมื่อเอาเม้าส์ชี้)
                         const textClass = isOther ? "font-bold text-gray-500 cursor-pointer hover:text-blue-700 hover:underline transition-colors" : "font-bold text-blue-700 cursor-pointer hover:underline";
                         
-                        // FIX: ป้องกัน Double Quotes (") ภายในประโยค L2 ทำให้โครงสร้าง HTML พังเมื่อใส่ใน onclick
                         const safeAta = String(ata).replace(/'/g, "\\'").replace(/"/g, '&quot;');
                         const safeModel = String(model).replace(/'/g, "\\'").replace(/"/g, '&quot;');
                         const safeL2 = String(l2).replace(/'/g, "\\'").replace(/"/g, '&quot;');
                         const drillAction = `onclick="drilldownL2Summary('${safeAta}', '${safeModel}', '${safeL2}')"`;
                         
-                        // เอาเงื่อนไขการบล็อกคลิกออก เพื่อให้คลิกเข้า Drilldown ได้ทุกบรรทัด
                         html += `<td class="px-4 py-3 border-r border-b border-gray-200 align-top">
                                     <span class="${textClass} flex items-center" ${drillAction} title="Click to view details">
-                                        ${!isOther ? '<i class="fa-solid fa-bolt mr-2 text-rose-500"></i>' : '<i class="fa-solid fa-list mr-2 text-gray-400"></i>'}${l2}
+                                        ${!isOther ? '<i class="fa-solid fa-bolt mr-2 text-rose-500"></i>' : '<i class="fa-solid fa-list mr-2 text-gray-400"></i>'}${escapeHTML(l2)}
                                     </span>
                                  </td>`;
                         
                         const regsArr = Array.from(summaryData[ata][model][l2].regs).sort();
-                        const regsHtml = regsArr.map(r => `<span class="bg-gray-100 border border-gray-200 text-gray-700 text-[10px] font-bold px-1.5 py-0.5 rounded mr-1 mb-1 inline-block">${r}</span>`).join('');
+                        const regsHtml = regsArr.map(r => `<span class="bg-gray-100 border border-gray-200 text-gray-700 text-[10px] font-bold px-1.5 py-0.5 rounded mr-1 mb-1 inline-block">${escapeHTML(r)}</span>`).join('');
                         
                         html += `<td class="px-4 py-3 border-r border-b border-gray-200 align-top">${regsHtml}</td>`;
                         html += `<td class="px-4 py-3 border-b border-gray-200 text-center font-bold text-gray-600 align-top bg-gray-50">${summaryData[ata][model][l2].count}</td>`;
@@ -1840,7 +1735,6 @@
             document.getElementById('summary-l2-content').innerHTML = html;
         }
 
-        // Add the drilldown function globally
         function drilldownL2Summary(ata, model, l2Text) {
             const subset = currentFilteredData.filter(d => 
                 d.ataLabel === ata && 
@@ -1866,7 +1760,6 @@
                 if (a['Aircraft Model'] !== b['Aircraft Model']) return a['Aircraft Model'] > b['Aircraft Model'] ? 1 : -1;
                 return a['Registration'] > b['Registration'] ? 1 : -1;
             });
-
             exportToExcel(exportData, 'Complaint_Summary_Raw_Grouped');
         }
 
@@ -1874,14 +1767,8 @@
             const techData = currentFilteredData.filter(d => d.category === 'Tech');
             if (techData.length === 0) { alert("No data to export!"); return; }
             
-            // Build same grouping logic for export
             const summaryData = {};
-
             techData.forEach(d => {
-                // ประมวลผลจากสมองส่วนกลางเพื่อให้ตรงกัน (ส่งแค่ Complaint Text)
-                const l2Summaries = evaluateL2Summaries(d.cleanComp);
-                d.l2SummaryText = l2Summaries.length > 0 ? l2Summaries.join(', ') : 'General / Uncategorized';
-
                 const ata = d.ataLabel && d.ataLabel !== "Unknown" ? d.ataLabel : "Unknown ATA";
                 const model = d.acModel || "Unknown";
                 const l2Text = d.l2SummaryText;
@@ -1913,11 +1800,9 @@
                     });
                 });
             });
-
             exportToExcel(exportArr, 'L2_Complaint_Summary_Grouped');
         }
 
-        // --- 5. EXPORT & UTILS ---
         function exportToExcel(data, fileName, sheetName = 'Data') {
             if (!data || data.length === 0) { alert("No data to export!"); return; }
             const ws = XLSX.utils.json_to_sheet(data);
@@ -1981,9 +1866,7 @@
         }
 
         function runNgramAnalysis(data) {
-             // Store data for later use in ECharts rendering
              phraseDataStore = data;
-             
              const col = document.getElementById('ngram-col').value;
              const stopWords = new Set(["THE","AND","TO","OF","IN","IS","FOR","WITH","ON","AT","FROM","BY","NAME","AUTH","NO","DATE","TIME","REF","AMM","TASK","REV","ACTION","CHECKED","NOTED","FOUND","HAS", "WAS", "MSG"]);
             const phraseCounts = {};
@@ -1991,18 +1874,15 @@
                 let txt = row[col]; if(!txt) return;
                 txt = txt.replace(/(Name\s*:|Auth\s*no\.?\s*:|Created\s*by\s*:|Action\s*STA\s*:|\-{3,})[\s\S]*/gi, "");
                 const upperTxt = txt.toUpperCase();
-                
                 const rowWordsFound = new Set();
 
-                // 1. สแกนหาคำแบบเป๊ะๆ ก่อน
                 masterFuzzyWords.forEach(mw => {
                     const escapedMw = mw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    if (new RegExp(`\\b${escapedMw}\\b`, 'i').test(upperTxt)) {
+                    if (new RegExp(`(^|[^A-Z0-9_])${escapedMw}([^A-Z0-9_]|$)`, 'i').test(upperTxt)) {
                         rowWordsFound.add(mw);
                     }
                 });
 
-                // 2. สแกนคำเดี่ยวแบบ Fuzzy
                 const words = upperTxt.replace(/[^A-Z0-9\/\-\s]/g, ' ').split(/\s+/).filter(w => w.length>2 && !stopWords.has(w) && isNaN(w));
                 words.forEach(w => {
                     if (rowWordsFound.has(w)) return;
@@ -2020,17 +1900,15 @@
             });
             
             const sorted = Object.entries(phraseCounts).sort((a,b)=>b[1]-a[1]).slice(0, 20);
-            
             const ngramEl = document.getElementById('ngram-chart');
             if(sorted.length === 0) { Plotly.newPlot('ngram-chart', [], { title: { text: 'No dictionary words found', font: { size: 14, color: '#9CA3AF' } } }, {responsive: true}); return; }
             
-            // แยกสีแท่งกราฟตามหมวดหมู่คำศัพท์
             const barColors = sorted.map(item => {
                 const word = item[0];
-                if (wordCategories.Symptom && wordCategories.Symptom.includes(word)) return '#E11D48'; // Rose (แดง)
-                if (wordCategories.Component && wordCategories.Component.includes(word)) return '#4F46E5'; // Indigo (น้ำเงิน)
-                if (wordCategories.Action && wordCategories.Action.includes(word)) return '#10B981'; // Emerald (เขียว)
-                return '#94A3B8'; // Slate (เทา) สำหรับคำหมวดอื่นๆ
+                if (wordCategories.Symptom && wordCategories.Symptom.includes(word)) return '#E11D48'; 
+                if (wordCategories.Component && wordCategories.Component.includes(word)) return '#4F46E5'; 
+                if (wordCategories.Action && wordCategories.Action.includes(word)) return '#10B981'; 
+                return '#94A3B8'; 
             });
 
             Plotly.newPlot('ngram-chart', [{ 
@@ -2043,23 +1921,23 @@
                 xaxis: {tickangle: -45} 
             }, {responsive: true});
             
-            // FIX: Remove old listeners first to prevent duplicates
             ngramEl.removeAllListeners('plotly_click');
-            // FIX: Use currentFilteredData in closure to prevent ReferenceError if 'data' is stale
             ngramEl.on('plotly_click', function(clickData){
                 const phrase = clickData.points[0].x;
-                // เจาะจง Drilldown ไปยังประโยคที่มีคำศัพท์นั้นๆ ทั้งตัวสะกดถูกและตัวที่สะกดผิดแต่เชื่อมกันอยู่
                 drilldownView(currentFilteredData.filter(d => {
                     let text = (d[col]||"").toUpperCase();
-                    const exactMatch = new RegExp(`\\b${phrase}\\b`).test(text);
+                    const escapedPhrase = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const exactMatch = new RegExp(`(^|[^A-Z0-9_])${escapedPhrase}([^A-Z0-9_]|$)`, 'i').test(text);
                     const originalWords = Object.keys(globalFuzzyMap).filter(k => globalFuzzyMap[k] === phrase);
                     const suggWords = currentFuzzySuggestions.filter(s => s.suggested === phrase).map(s => s.original);
-                    const fuzzyMatch = [...originalWords, ...suggWords].some(ow => new RegExp(`\\b${ow}\\b`).test(text));
+                    const fuzzyMatch = [...originalWords, ...suggWords].some(ow => {
+                        const escapedOw = ow.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        return new RegExp(`(^|[^A-Z0-9_])${escapedOw}([^A-Z0-9_]|$)`, 'i').test(text);
+                    });
                     return exactMatch || fuzzyMatch;
                 }), `Phrase: "${phrase}"`);
             });
             
-            // Call ECharts Rendering ONLY if the tab is visible to prevent canvas errors
             const phraseTab = document.getElementById('tab-phrase');
             if (phraseTab && !phraseTab.classList.contains('hidden')) {
                  renderEChartsAdvanced(data); 
@@ -2074,18 +1952,15 @@
                 let txt = row[col]; if(!txt) return;
                 txt = txt.replace(/(Name\s*:|Auth\s*no\.?\s*:|Created\s*by\s*:|Action\s*STA\s*:|\-{3,})[\s\S]*/gi, "");
                 const upperTxt = txt.toUpperCase();
-                
                 const rowWordsFound = new Set();
 
-                // 1. สแกนหาคำแบบเป๊ะๆ ก่อน
                 masterFuzzyWords.forEach(mw => {
                     const escapedMw = mw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    if (new RegExp(`\\b${escapedMw}\\b`, 'i').test(upperTxt)) {
+                    if (new RegExp(`(^|[^A-Z0-9_])${escapedMw}([^A-Z0-9_]|$)`, 'i').test(upperTxt)) {
                         rowWordsFound.add(mw);
                     }
                 });
 
-                // 2. สแกนคำเดี่ยวแบบ Fuzzy
                 const words = upperTxt.replace(/[^A-Z0-9\/\-\s]/g, ' ').split(/\s+/).filter(w => w.length>2 && !stopWords.has(w) && isNaN(w));
                 words.forEach(w => {
                     if (rowWordsFound.has(w)) return;
@@ -2129,12 +2004,6 @@
         }
 
         function exportRawData() { exportToExcel(currentRenderData, 'Raw_Data_Export'); }
-
-        // --- NEW EXPORT FUNCTIONS FOR ECHARTS ---
-        function exportRiskMatrix() {
-            if (!heatmapDataExport || heatmapDataExport.length === 0) { alert("No Risk Matrix data to export!"); return; }
-            exportToExcel(heatmapDataExport, 'Flight_Phase_Risk_Matrix');
-        }
 
         function exportResolutionFlow() {
             if (!sankeyDataExport || sankeyDataExport.length === 0) { alert("No Flow data to export!"); return; }
@@ -2186,12 +2055,9 @@
         function categorize(row, ataCode) {
             const act = (row['Activity Code Text']||"").toUpperCase();
             const comp = (row['Complaint Text']||"").toUpperCase();
-            const infoKeys = ['AUTOLAND', 'JAMMING', 'NOTED', 'FLIGHT HOURS'];
-            
-            // เพิ่มเงื่อนไข: ถ้าเป็น ATA 22, 25, 49, 50 ให้จัดเป็น Info ทันที
-            const infoATAs = ['22', '25', '49', '50'];
+            const infoKeys = ['NOTED'];
+            const infoATAs = ['22', '25' , '50'];
             if (infoATAs.includes(ataCode)) return 'Info';
-
             if(act.includes('INFORMATION') || infoKeys.some(k => comp.includes(k))) return 'Info';
             return 'Tech';
         }
@@ -2232,24 +2098,19 @@
             
             validData.forEach(d => {
                 let timeKey;
-                // --- Grouping Logic ---
                 if (currentTrendFreq === 'Day') {
-                    // YYYY-MM-DD (Local)
                     const y = d.pDate.getFullYear();
                     const m = String(d.pDate.getMonth() + 1).padStart(2, '0');
                     const day = String(d.pDate.getDate()).padStart(2, '0');
                     timeKey = `${y}-${m}-${day}`;
                 } else if (currentTrendFreq === 'Week') {
-                    // ISO Week YYYY-Www
                     const date = new Date(d.pDate.getTime());
                     date.setHours(0, 0, 0, 0);
-                    // Thursday in current week decides the year.
                     date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
                     const week1 = new Date(date.getFullYear(), 0, 4);
                     const weekNum = 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
                     timeKey = `${date.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
                 } else {
-                    // Month YYYY-MM (Local)
                     const y = d.pDate.getFullYear();
                     const m = String(d.pDate.getMonth() + 1).padStart(2, '0');
                     timeKey = `${y}-${m}`;
@@ -2281,8 +2142,7 @@
 
             if (traces.length === 0) traces.push({ x: [], y: [], type: 'scatter', name: 'No Data' });
             
-            // Layout config based on frequency
-            let xaxisConfig = { type: 'category' }; // Default category for Week
+            let xaxisConfig = { type: 'category' };
             if (currentTrendFreq === 'Day') xaxisConfig = { type: 'date', tickformat: '%d %b' };
             if (currentTrendFreq === 'Month') xaxisConfig = { type: 'date', tickformat: '%b %Y', dtick: 'M1' };
 
@@ -2301,7 +2161,6 @@
                 const xVal = point.x; 
                 const modelName = point.data.name; 
                 
-                // Filtering Logic matching the grouping
                 const subset = currentFilteredData.filter(d => {
                      if (!d.pDate) return false;
                      let dKey;
@@ -2311,14 +2170,11 @@
 
                      if (currentTrendFreq === 'Day') {
                          dKey = `${y}-${m}-${day}`;
-                         // Plotly might return full date string for date axis, slice it
                          return xVal.startsWith(dKey) && (modelName !== 'No Data' ? d.acModel === modelName : true);
                      } else if (currentTrendFreq === 'Month') {
                          dKey = `${y}-${m}`;
                          return xVal.startsWith(dKey) && (modelName !== 'No Data' ? d.acModel === modelName : true);
                      } else {
-                         // Week logic match is complex without library, simplified check:
-                         // Just show all for model if complex
                          return (modelName !== 'No Data' ? d.acModel === modelName : true);
                      }
                 });
@@ -2327,16 +2183,11 @@
             });
         }
         
-        // --- DECOUPLED CHART RENDERERS (V11.27 FIX) ---
-        
         function renderCategoryChart(data) {
-            // Issue Category Donut
             const cats = { 
                 'Tech': data.filter(d => d.category === 'Tech').length, 
                 'Info': data.filter(d => d.category === 'Info').length 
             };
-            
-            // Check if empty
             if (cats['Tech'] === 0 && cats['Info'] === 0) {
                  Plotly.newPlot('cat-chart', [], { title: { text: 'No Data', font: { size: 14, color: '#9CA3AF' } } });
                  return;
@@ -2361,22 +2212,18 @@
         }
 
         function renderStatusChart(data) {
-            // Maintenance Status Donut
             const statusCounts = {};
             data.forEach(d => { 
                 if(d.Maintenance_Status) {
                     statusCounts[d.Maintenance_Status] = (statusCounts[d.Maintenance_Status]||0)+1; 
                 }
             });
-            
-            // Check if empty
             if (Object.keys(statusCounts).length === 0) {
                  Plotly.newPlot('status-chart', [], { title: { text: 'No Data', font: { size: 14, color: '#9CA3AF' } } });
                  return;
             }
 
             const statusEl = document.getElementById('status-chart');
-            // Colors: Fix=Red, Defer=Yellow, Inspect=Blue, Info=Green, Other=Gray
             const statusColors = { 'Fix': '#EF4444', 'Defer': '#F59E0B', 'Inspect': '#3B82F6', 'Info': '#10B981', 'Other': '#9CA3AF' };
             const sLabels = Object.keys(statusCounts);
             const sValues = Object.values(statusCounts);
@@ -2405,7 +2252,6 @@
         function renderTop5Cards(data) {
             const tech = data.filter(d => d.category === 'Tech');
             
-            // 1. Top 5 Aircraft
             const acCounts = {};
             tech.forEach(d => { if(d.ACREG) acCounts[d.ACREG] = (acCounts[d.ACREG]||0)+1; });
             const top5AC = Object.entries(acCounts).sort((a,b)=>b[1]-a[1]).slice(0, 5);
@@ -2413,13 +2259,12 @@
             const acListHtml = top5AC.map((item, idx) => `
                 <div class="flex justify-between items-center text-sm py-1.5 border-b border-gray-50 last:border-0">
                     <span class="font-semibold text-gray-700 w-6">${idx+1}.</span>
-                    <span class="text-blue-600 flex-1 truncate pr-2" title="${item[0]}">${item[0]}</span>
+                    <span class="text-blue-600 flex-1 truncate pr-2" title="${escapeHTML(item[0])}">${escapeHTML(item[0])}</span>
                     <span class="font-bold text-gray-800 bg-gray-100 px-2 py-0.5 rounded-full text-xs">${item[1]}</span>
                 </div>
             `).join('');
             document.getElementById('top5-ac-list').innerHTML = acListHtml || '<div class="text-xs text-gray-400 text-center py-4">No Data</div>';
 
-            // 2. Top 5 ATA
             const ataCounts = {};
             tech.forEach(d => { if(d.ataLabel && d.ataLabel !== 'Unknown') ataCounts[d.ataLabel] = (ataCounts[d.ataLabel]||0)+1; });
             const top5ATA = Object.entries(ataCounts).sort((a,b)=>b[1]-a[1]).slice(0, 5);
@@ -2427,14 +2272,12 @@
             const ataListHtml = top5ATA.map((item, idx) => `
                 <div class="flex justify-between items-center text-sm py-1.5 border-b border-gray-50 last:border-0">
                     <span class="font-semibold text-gray-700 w-6">${idx+1}.</span>
-                    <span class="text-gray-600 flex-1 truncate pr-2" title="${item[0]}">${item[0]}</span>
+                    <span class="text-gray-600 flex-1 truncate pr-2" title="${escapeHTML(item[0])}">${escapeHTML(item[0])}</span>
                     <span class="font-bold text-gray-800 bg-gray-100 px-2 py-0.5 rounded-full text-xs">${item[1]}</span>
                 </div>
             `).join('');
             document.getElementById('top5-ata-list').innerHTML = ataListHtml || '<div class="text-xs text-gray-400 text-center py-4">No Data</div>';
         }
-
-        // --- END DECOUPLED CHARTS ---
 
         function renderMatrix(data) {
             const tech = data.filter(d => d.category === 'Tech');
@@ -2464,7 +2307,6 @@
 
             if(topAC.length === 0) { Plotly.newPlot('matrix-chart', [], { title: { text: 'No data', font: { size: 14, color: '#9CA3AF' } } }, {responsive: true}); return; }
             
-            // Custom Colorscale: 0=White, High=Red
             const customColorscale = [
                 [0, '#FFFFFF'],      // 0: White
                 [0.000001, '#FEF9C3'], // >0: Light Yellow
@@ -2478,8 +2320,8 @@
             Plotly.newPlot('matrix-chart', [{ 
                 z: zValues, x: xLabels, y: topAC, type: 'heatmap', colorscale: customColorscale, showscale: true,
                 ygap: 1, xgap: 1,
-                text: textValues, // Values for display
-                texttemplate: "%{text}", // Show value
+                text: textValues, 
+                texttemplate: "%{text}", 
                 hovertext: zValues.map(row => row.map((val, i) => `ATA: ${hoverTexts[i]}<br>Count: ${val}`)),
                 hovertemplate: 'Aircraft: %{y}<br>%{hovertext}<extra></extra>'
             }], { margin: {t:30, l:100, r:30, b:100}, xaxis: { tickangle: -45, title: '' }, yaxis: { title: '' } }, {responsive: true});
@@ -2553,7 +2395,6 @@
             }
             const xLabels = sortedAC.map(x => x[0]);
             const fleetEl = document.getElementById('fleet-chart');
-            // ปรับระยะ margin 'b' (bottom) จาก 40 เป็น 80 เพื่อให้มีพื้นที่แสดงชื่อทะเบียนครบถ้วน
             Plotly.newPlot('fleet-chart', [{ x: xLabels, y: sortedAC.map(x=>x[1]), type: 'bar', marker: {color: '#8A4C9C'} }], { margin: {t:20,l:30,r:10,b:80} }, {responsive: true});
             fleetEl.removeAllListeners('plotly_click');
             fleetEl.on('plotly_click', function(clickData){ drilldownView(data.filter(d => d.ACREG === clickData.points[0].x && d.category === 'Tech'), `Aircraft: ${clickData.points[0].x}`); });
@@ -2581,8 +2422,8 @@
                     type: 'bar', 
                     name: 'Count', 
                     marker: {color: '#F59E0B'},
-                    text: sortedATA.map(x=>x[1]), // Add text
-                    textposition: 'outside',      // Position outside
+                    text: sortedATA.map(x=>x[1]), 
+                    textposition: 'outside',      
                     hovertext: hoverTextsATA, 
                     hovertemplate: '%{hovertext}<br>Count: %{y}<extra></extra>' 
                 },
@@ -2590,17 +2431,17 @@
                     x: xLabelsATA, 
                     y: cumPct, 
                     type: 'scatter', 
-                    mode: 'lines+markers', // Add markers
+                    mode: 'lines+markers', 
                     name: 'Cum %', 
                     yaxis: 'y2', 
                     line: {color: '#374151', width: 2},
-                    marker: {size: 6, color: '#374151'}, // Style markers
+                    marker: {size: 6, color: '#374151'}, 
                     hovertext: hoverTextsATA, 
                     hovertemplate: '%{hovertext}<br>Cum %: %{y:.2f}%<extra></extra>' 
                 }
             ], { 
-                margin: {t:25,l:40,r:40,b:50}, // Adjust margins for text labels
-                yaxis2: {overlaying: 'y', side: 'right', range: [0, 110], showgrid: false}, // Adjust range for labels
+                margin: {t:25,l:40,r:40,b:50}, 
+                yaxis2: {overlaying: 'y', side: 'right', range: [0, 110], showgrid: false}, 
                 yaxis: {showgrid: false},
                 showlegend: false 
             }, {responsive: true});
@@ -2626,10 +2467,10 @@
                 y: yLabels, x: sorted.map(x=>x[1]), type: 'bar', orientation: 'h', marker: {color: '#EF4444'},
                 hovertext: hoverTexts, hovertemplate: '%{hovertext}<br>Count: %{x}<extra></extra>'
             }], { 
-                margin: {t:0, l:55, r:10, b:30}, // ปรับลด margin ซ้ายจาก 140 เหลือ 70 เพื่อลดช่องว่าง
+                margin: {t:0, l:55, r:10, b:30}, 
                 yaxis: {
                     autorange:'reversed', 
-                    tickpad: 10 // เพิ่มระยะห่างระหว่างตัวหนังสือกับแท่งกราฟ
+                    tickpad: 10 
                 } 
             }, {responsive: true});
             fcEl.removeAllListeners('plotly_click');
@@ -2638,16 +2479,14 @@
                 drilldownView(data.filter(d => d.ataLabel === fullLabel), `ATA: ${fullLabel}`); 
             });
 
-            // Populate Side List (Added in V11.10)
             const listEl = document.getElementById('fc-list');
             if (listEl) {
                 listEl.innerHTML = sorted.map(([label, count]) => {
-                    // FIX: ป้องกัน Double Quotes ในชื่อ ATA Label พังโครงสร้าง HTML
                     const safeLabel = String(label).replace(/'/g, "\\'").replace(/"/g, '&quot;');
                     return `
                         <div class="flex justify-between items-center py-2 border-b border-gray-100 hover:bg-red-50 cursor-pointer transition" 
                              onclick="drilldownView(currentFilteredData.filter(d => d.ataLabel === '${safeLabel}'), 'ATA: ${safeLabel}')">
-                            <span class="text-xs text-gray-600 truncate w-3/4" title="${label}">${label}</span>
+                            <span class="text-xs text-gray-600 truncate w-3/4" title="${escapeHTML(label)}">${escapeHTML(label)}</span>
                             <span class="text-xs font-bold text-gray-800">${count}</span>
                         </div>
                     `;
@@ -2655,138 +2494,42 @@
             }
         }
 
-        // --- 9. ECHARTS ADVANCED RENDERING ---
         function renderEChartsAdvanced(data) {
-            // SAFETY CHECK: ตรวจสอบว่ามีข้อมูลและกราฟพร้อมวาดหรือไม่ ป้องกัน Error ตอนสลับแท็บรัวๆ
             if (!data || data.length === 0) return;
             
-            const heatmapEl = document.getElementById('echart-heatmap');
             const sankeyEl = document.getElementById('echart-sankey');
 
-            if (!heatmapEl || !sankeyEl) return;
+            if (!sankeyEl || sankeyEl.clientWidth === 0 || sankeyEl.clientHeight === 0) return;
 
-            // 1. SAFETY CHECK: If elements have no size, ECharts will throw "addColorStop" error
-            if (heatmapEl.clientWidth === 0 || heatmapEl.clientHeight === 0) return;
-            if (sankeyEl.clientWidth === 0 || sankeyEl.clientHeight === 0) return;
-
-            // 2. DISPOSE: Safely dispose old instances
-            [heatmapEl, sankeyEl].forEach(el => {
-                const existing = echarts.getInstanceByDom(el);
-                if (existing) existing.dispose();
-            });
+            const existingSankey = echarts.getInstanceByDom(sankeyEl);
+            if (existingSankey) existingSankey.dispose();
 
             const techData = data.filter(d => d.category === 'Tech');
-            const compCol = document.getElementById('ngram-col').value; // Usually 'Complaint Text'
 
-            // --- 1. Risk Matrix (Phase vs Symptom) ---
-            const phases = ['PARK', 'TAXI', 'TAKEOFF', 'CLIMB', 'CRUISE', 'DESCENT', 'LANDING'];
-            const symptomCounts = {};
-            const matrixData = {}; // key: "PHASE|SYMPTOM" -> count
-
-            techData.forEach(d => {
-                let txt = (d[compCol] || "").toUpperCase();
-
-                let phase = "UNKNOWN";
-                // Detect Phase
-                for (const [p, keywords] of Object.entries(flightPhases)) {
-                    if (keywords.some(k => txt.includes(k))) { phase = p; break; }
-                }
-                if (phase === "UNKNOWN") return; // Skip unknown phases for matrix
-
-                // Detect Symptom (First match)
-                let symptom = null;
-                for (const s of wordCategories.Symptom) {
-                    if (new RegExp(`\\b${s}\\b`).test(txt)) { symptom = s; break; }
-                }
-                if (!symptom) return;
-
-                symptomCounts[symptom] = (symptomCounts[symptom] || 0) + 1;
-                const key = `${phase}|${symptom}`;
-                matrixData[key] = (matrixData[key] || 0) + 1;
-            });
-
-            // Top 10 Symptoms
-            const topSymptoms = Object.entries(symptomCounts)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 10)
-                .map(x => x[0]);
-
-            const heatmapData = [];
-            // Prepare Export Data
-            heatmapDataExport = [];
-
-            phases.forEach((p, i) => {
-                topSymptoms.forEach((s, j) => {
-                    const count = matrixData[`${p}|${s}`] || 0;
-                    heatmapData.push([i, j, count]);
-                    if(count > 0) heatmapDataExport.push({ Phase: p, Symptom: s, Count: count });
-                });
-            });
-
-            // 3. MAX VALUE SAFETY: Avoid 0 max value which breaks ECharts visualMap
-            let maxVal = Math.max(...heatmapData.map(d=>d[2]));
-            if (!isFinite(maxVal) || maxVal === 0) maxVal = 10; // Default fallback
-
-            const heatmapChart = echarts.init(heatmapEl);
-            heatmapChart.setOption({
-                tooltip: { position: 'top' },
-                grid: { height: '70%', top: '10%' },
-                xAxis: { type: 'category', data: phases, splitArea: { show: true } },
-                yAxis: { type: 'category', data: topSymptoms, splitArea: { show: true } },
-                visualMap: { 
-                    min: 0, 
-                    max: maxVal, // Use safe max value
-                    calculable: true, 
-                    orient: 'horizontal', 
-                    left: 'center', 
-                    bottom: '0%', 
-                    inRange: { color: ['#fff', '#fde047', '#ef4444'] } 
-                },
-                series: [{
-                    name: 'Risk Count', type: 'heatmap', data: heatmapData,
-                    label: { show: true },
-                    emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0, 0, 0, 0.5)' } }
-                }]
-            });
-            
-            // HEATMAP CLICK EVENT
-            heatmapChart.on('click', function(params) {
-                const phase = phases[params.data[0]];
-                const symptom = topSymptoms[params.data[1]];
-                
-                // Use currentFilteredData for robust filtering
-                const subset = currentFilteredData.filter(d => {
-                    let txt = (d[compCol] || "").toUpperCase();
-                    
-                    const hasPhase = flightPhases[phase].some(k => txt.includes(k));
-                    const hasSymptom = new RegExp(`\\b${symptom}\\b`).test(txt);
-                    return hasPhase && hasSymptom && d.category === 'Tech'; 
-                });
-                drilldownView(subset, `Risk: ${phase} + ${symptom}`);
-            });
-
-            // --- 2. Sankey Flow (Symptom -> Component -> Action) ---
             const nodes = new Set();
             const links = [];
-            const flowCounts = {}; // Key: "Sym|Comp|Act"
-            sankeyDataExport = []; // Clear old export
+            const flowCounts = {}; 
+            sankeyDataExport = []; 
 
             techData.forEach(d => {
                 let txt = (d['Complaint Text'] || "").toUpperCase();
                 const actTxt = (d['Activity Code Text'] || "").toUpperCase(); 
 
-                // 1. Symptom
                 let sym = null;
-                for (const s of wordCategories.Symptom) { if (new RegExp(`\\b${s}\\b`).test(txt)) { sym = s; break; } }
+                for (const s of wordCategories.Symptom) { 
+                    const escapedS = s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    if (new RegExp(`(^|[^A-Z0-9_])${escapedS}([^A-Z0-9_]|$)`, 'i').test(txt)) { sym = s; break; } 
+                }
                 
-                // 2. Component
                 let comp = null;
-                for (const c of wordCategories.Component) { if (new RegExp(`\\b${c}\\b`).test(txt)) { comp = c; break; } }
+                for (const c of wordCategories.Component) { 
+                    const escapedC = c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    if (new RegExp(`(^|[^A-Z0-9_])${escapedC}([^A-Z0-9_]|$)`, 'i').test(txt)) { comp = c; break; } 
+                }
 
-                // 3. Action
                 let action = null;
                 for (const a of actionKeywords) { if (actTxt.includes(a)) { action = a; break; } }
-                if(!action) action = d.Maintenance_Status || "OTHER"; // Fallback
+                if(!action) action = d.Maintenance_Status || "OTHER"; 
 
                 if (sym && comp && action) {
                     const key = `${sym}|${comp}|${action}`;
@@ -2794,15 +2537,11 @@
                 }
             });
 
-            // Filter Top Flows (e.g., > 1 occurrence or Top 20)
             const sortedFlows = Object.entries(flowCounts).sort((a, b) => b[1] - a[1]).slice(0, 20);
             
             sortedFlows.forEach(([key, val]) => {
                 const [s, c, a] = key.split('|');
-                // Export Data
                 sankeyDataExport.push({ Symptom: s, Component: c, Action: a, Count: val });
-
-                // Unique Names for Levels to avoid cycle (e.g., "Reset" as symptom and action)
                 const n1 = `Sym: ${s}`, n2 = `Part: ${c}`, n3 = `Act: ${a}`;
                 nodes.add(n1); nodes.add(n2); nodes.add(n3);
                 links.push({ source: n1, target: n2, value: val });
@@ -2821,17 +2560,17 @@
                 }]
             });
             
-            // SANKEY CLICK EVENT
             sankeyChart.on('click', function(params) {
                 const filterData = currentFilteredData.filter(d => d.category === 'Tech');
                 
                 if (params.dataType === 'node') {
                     const name = params.name; 
                     const keyword = name.split(': ')[1];
+                    const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                     const subset = filterData.filter(d => {
                         let txt = (d['Complaint Text'] || "").toUpperCase();
                         const actTxt = (d['Activity Code Text'] || "").toUpperCase();
-                        return new RegExp(`\\b${keyword}\\b`).test(txt) || actTxt.includes(keyword) || d.Maintenance_Status === keyword;
+                        return new RegExp(`(^|[^A-Z0-9_])${escapedKeyword}([^A-Z0-9_]|$)`, 'i').test(txt) || actTxt.includes(keyword) || d.Maintenance_Status === keyword;
                     });
                     drilldownView(subset, `Flow Node: ${keyword}`);
                 } else if (params.dataType === 'edge') {
@@ -2841,22 +2580,19 @@
                         let txt = (d['Complaint Text'] || "").toUpperCase();
                         const actTxt = (d['Activity Code Text'] || "").toUpperCase();
                         
-                        const hasSrc = new RegExp(`\\b${src}\\b`).test(txt) || actTxt.includes(src);
-                        const hasTgt = new RegExp(`\\b${tgt}\\b`).test(txt) || actTxt.includes(tgt) || d.Maintenance_Status === tgt;
+                        const escapedSrc = src.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        const escapedTgt = tgt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        
+                        const hasSrc = new RegExp(`(^|[^A-Z0-9_])${escapedSrc}([^A-Z0-9_]|$)`, 'i').test(txt) || actTxt.includes(src);
+                        const hasTgt = new RegExp(`(^|[^A-Z0-9_])${escapedTgt}([^A-Z0-9_]|$)`, 'i').test(txt) || actTxt.includes(tgt) || d.Maintenance_Status === tgt;
                         
                         return hasSrc && hasTgt;
                     });
                     drilldownView(subset, `Flow Link: ${src} -> ${tgt}`);
                 }
             });
-            
-            // Resize handler integration
-            window.addEventListener('resize', function() {
-                heatmapChart.resize();
-                sankeyChart.resize();
-            });
         }
-        
+
         function drillChronic(reg, ataCode) {
             const subset = currentFilteredData.filter(d => d.ACREG === reg && d.ataCode === ataCode);
             drilldownView(subset, `Chronic: ${reg} - ATA ${ataCode}`);
@@ -2867,21 +2603,21 @@
             const groups = {};
             tech.forEach(d => {
                 const key = `${d.ACREG}|${d.ataCode}`;
-                if(!groups[key]) { groups[key] = { ...d, count: 1 }; } else { groups[key].count++; } // Logic Rule: Incremental Count
+                if(!groups[key]) { groups[key] = { ...d, count: 1 }; } else { groups[key].count++; } 
             });
             
-            const chronicList = Object.values(groups).filter(item => item.count > 1); // Logic Rule: > 1 occurrence
+            const chronicList = Object.values(groups).filter(item => item.count > 1); 
 
             const html = chronicList.sort((a,b)=>b.count-a.count).map(c => `
                 <tr class="bg-white border-b hover:bg-red-50 cursor-pointer" onclick="highlightRow(this)">
-                    <td class="px-4 py-3 font-bold text-gray-800">${c.ACREG}</td>
-                    <td class="px-4 py-3">${c.ataLabel}</td>
+                    <td class="px-4 py-3 font-bold text-gray-800">${escapeHTML(c.ACREG)}</td>
+                    <td class="px-4 py-3">${escapeHTML(c.ataLabel)}</td>
                     <td class="px-4 py-3 font-bold text-red-600">
-                        <span class="drill-link" onclick="event.stopPropagation(); drillChronic('${c.ACREG}', '${c.ataCode}')">${c.count}</span>
+                        <span class="drill-link" onclick="event.stopPropagation(); drillChronic('${escapeHTML(c.ACREG)}', '${escapeHTML(c.ataCode)}')">${c.count}</span>
                     </td>
-                    <td class="px-4 py-3 text-sm">${c['Complaint Date']}</td>
+                    <td class="px-4 py-3 text-sm">${escapeHTML(c['Complaint Date'])}</td>
                     <td class="px-4 py-3">${getStatusBadge(c.Maintenance_Status)}</td>
-                    <td class="px-4 py-3 text-xs text-gray-500 truncate max-w-xs">${c.cleanComp}</td>
+                    <td class="px-4 py-3 text-xs text-gray-500 truncate max-w-xs">${escapeHTML(c.cleanComp)}</td>
                 </tr>
             `).join('');
             document.getElementById('chronic-body').innerHTML = html || '<tr><td colspan="6" class="p-4 text-center text-gray-400">No recurring defects found in this selection.</td></tr>';
@@ -2890,40 +2626,66 @@
         function renderProblemStatement(data) {
             const techData = data.filter(d => d.category === 'Tech');
             if(techData.length === 0) { document.getElementById('statement-content').innerHTML = "No technical data available."; return; }
+            
             const grouping = {};
+            
+            // 1. จัดกลุ่มตาม Model, ATA และ L2 Summary
             techData.forEach(d => {
-                if(d.ataCode && d.ataCode !== "Unknown") {
+                if(d.ataCode && d.ataCode !== "Unknown" && d.l2SummariesArr && d.l2SummariesArr.length > 0) {
                     const key = `${d.acModel}|${d.ataLabel}`;
-                    if(!grouping[key]) grouping[key] = {};
-                    if(!grouping[key][d.ACREG]) grouping[key][d.ACREG] = [];
-                    grouping[key][d.ACREG].push(d);
+                    
+                    d.l2SummariesArr.forEach(l2 => {
+                        // ข้ามรายการที่ไม่ได้ระบุปัญหา (General / Uncategorized)
+                        if (l2 !== 'General / Uncategorized') {
+                            if (!grouping[key]) grouping[key] = {};
+                            if (!grouping[key][l2]) grouping[key][l2] = new Set();
+                            if (d.ACREG) {
+                                grouping[key][l2].add(d.ACREG); // เก็บทะเบียนเครื่องแบบไม่ซ้ำ (Set)
+                            }
+                        }
+                    });
                 }
             });
-            let html = "";
-            let hasChronic = false;
-            Object.keys(grouping).forEach(groupKey => {
-                const regsWithRepeats = [];
-                Object.keys(grouping[groupKey]).forEach(reg => {
-                    if(grouping[groupKey][reg].length > 1) regsWithRepeats.push(reg);
-                });
 
-                if(regsWithRepeats.length > 0) {
-                    hasChronic = true;
+            let html = "";
+            let hasIssues = false;
+            
+            // ประโยคเชื่อมต่อ (สลับใช้เพื่อไม่ให้ซ้ำซาก)
+            const templates = [
+                "Characterized by pilot reports of",
+                "Identified by pilot reports of",
+                "Presenting with pilot reports of",
+                "Associated with pilot reports of"
+            ];
+
+            // 2. สร้างข้อความ HTML สำหรับรายงาน
+            Object.keys(grouping).sort().forEach(groupKey => {
+                const l2Dict = grouping[groupKey];
+                const validL2s = Object.keys(l2Dict).sort();
+
+                if(validL2s.length > 0) {
+                    hasIssues = true;
                     const [model, ata] = groupKey.split('|');
-                    html += `<div class="mb-6 pb-4 border-b border-gray-300"><div class="font-bold text-blue-800 mb-2">${model} ATA ${ata}</div>`;
-                    const regList = regsWithRepeats.join(", ");
-                    html += `<div class="mb-4">Three-month rolling average of PIREPs rate per 1,000 flight hours exceeds the threshold. Chronic aircraft identified: ${regList}.</div>`;
-                    regsWithRepeats.forEach(reg => {
-                        const msgs = [...new Set(grouping[groupKey][reg].map(d => d.cleanComp))]; 
-                        const issueDesc = msgs.slice(0,2).join(" and ");
-                        const templates = [`Increasing pilot reports of ${issueDesc}.`, `Continued pilot reports of ${issueDesc}.`, `Rising number of pilot reports indicating ${issueDesc}.`];
-                        const sentence = templates[Math.floor(Math.random() * templates.length)];
-                        html += `<div class="mt-2 text-sm"><span class="font-semibold">Chronic aircraft:</span> ${reg}, ${sentence}</div>`;
+                    
+                    html += `<div class="mb-6 pb-4 border-b border-gray-300">`;
+                    html += `<div class="font-bold text-blue-800 mb-2">${escapeHTML(model)} ATA ${escapeHTML(ata)}</div>`;
+                    html += `<div class="mb-4">Three-month rolling average of PIREPs rate per 1,000 flight hours exceeds the threshold. Chronic aircraft identified:</div>`;
+                    
+                    validL2s.forEach((l2, idx) => {
+                        const regs = Array.from(l2Dict[l2]).sort().map(r => escapeHTML(r)).join(", ");
+                        const sentence = templates[idx % templates.length];
+                        
+                        html += `<div class="mt-2 text-sm"><span class="font-semibold text-gray-700">Chronic aircraft:</span> ${regs} ${sentence} <span class="font-bold">${escapeHTML(l2)}</span>.</div>`;
                     });
+                    
                     html += `</div>`;
                 }
             });
-            if(!hasChronic) html = "No chronic defects identified in the current selection (need >1 occurrence).";
+
+            if(!hasIssues) {
+                html = `<div class="p-8 text-center text-gray-400 font-bold flex flex-col items-center"><i class="fa-solid fa-file-circle-check text-4xl mb-3 opacity-50"></i>No standardized L2 issues identified in the current selection.</div>`;
+            }
+            
             document.getElementById('statement-content').innerHTML = html;
         }
 
@@ -2934,13 +2696,13 @@
         function initColumnSelector() {
             if(!processedData.length) return;
             const keys = Object.keys(processedData[0]);
-            const ignored = ['pDate', 'cleanComp', 'cleanOp', 'ataCode'];
+            const ignored = ['pDate', 'cleanComp', 'cleanOp', 'ataCode', 'l2SummariesArr', 'l2SummaryText', 'extractedConcepts'];
             allAvailableCols = [...new Set(keys)].filter(k => !ignored.includes(k));
             visibleColumns = new Set(allAvailableCols);
             const container = document.getElementById('col-checkboxes');
             container.innerHTML = '';
             allAvailableCols.forEach(col => {
-                container.innerHTML += `<div class="flex items-center space-x-2"><input type="checkbox" id="col-${col}" value="${col}" checked class="rounded text-blue-600 focus:ring-blue-500 h-4 w-4" onchange="toggleColumn(this.value, this.checked)"><label for="col-${col}" class="text-xs text-gray-700 truncate cursor-pointer select-none">${col}</label></div>`;
+                container.innerHTML += `<div class="flex items-center space-x-2"><input type="checkbox" id="col-${col}" value="${col}" checked class="rounded text-blue-600 focus:ring-blue-500 h-4 w-4" onchange="toggleColumn(this.value, this.checked)"><label for="col-${col}" class="text-xs text-gray-700 truncate cursor-pointer select-none">${escapeHTML(col)}</label></div>`;
             });
         }
 
@@ -2955,7 +2717,6 @@
             if(row.classList.contains('selected-row')) { row.classList.remove('selected-row'); } else { row.classList.add('selected-row'); }
         }
 
-        // --- 8. TABLE RENDERER (PAGINATION + HIGHLIGHT + STICKY) ---
         function renderRawTable(data, highlightTerm = null) {
             currentRenderData = data;
             if(!data || data.length === 0) { 
@@ -2982,14 +2743,13 @@
             
             let thead = `<thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 shadow-sm z-10"><tr>`;
             headers.forEach(h => {
-                // กำหนดความกว้างคอลัมน์ให้เหมาะสม
                 let wClass = "";
                 if (h === 'Complaint Text') wClass = "w-1/3 min-w-[300px]";
                 else if (h === 'Activity Text') wClass = "w-1/4 min-w-[250px]";
                 else if (h === 'Activity Code Text') wClass = "w-1/6 min-w-[200px]";
-                else if (h === 'Component Text') wClass = "w-48 min-w-[150px] max-w-[200px]"; // เพิ่มการบีบคอลัมน์ Component Text
+                else if (h === 'Component Text') wClass = "w-48 min-w-[150px] max-w-[200px]"; 
                 
-                thead += `<th class="px-4 py-3 border-b bg-gray-100 font-bold tracking-wider ${wClass}">${h}</th>`;
+                thead += `<th class="px-4 py-3 border-b bg-gray-100 font-bold tracking-wider ${wClass}">${escapeHTML(h)}</th>`;
             });
             thead += `</tr></thead><tbody>`;
             
@@ -3001,18 +2761,20 @@
                     if (val instanceof Date) val = formatDate(val);
                     let displayVal = val ? String(val) : "";
                     
+                    displayVal = escapeHTML(displayVal);
+                    
                     if (highlightTerm && displayVal) {
-                        const regex = new RegExp(`(${highlightTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                        const safeTerm = escapeHTML(highlightTerm);
+                        const regex = new RegExp(`(${safeTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
                         displayVal = displayVal.replace(regex, '<span class="highlight-text">$1</span>');
                     }
                     
-                    // Logic for column specific wrapping
                     const wrapCols = ['Activity Code Text', 'Activity Text', 'Activity Text (Detail)', 'Operation Text', 'Component Text', 'Complaint Text', 'Technician Info'];
                     let cellClasses = "px-4 py-2 border-b border-gray-100 align-top";
                     if (wrapCols.includes(h)) {
-                        cellClasses += " break-words whitespace-normal"; // ปรับให้ตัดคำลงบรรทัดใหม่
+                        cellClasses += " break-words whitespace-normal"; 
                         if (h === 'Component Text') {
-                            cellClasses += " max-w-[200px]"; // บังคับบีบให้ Component Text ไม่เกิน 200px
+                            cellClasses += " max-w-[200px]"; 
                         }
                     } else {
                         cellClasses += " whitespace-nowrap";
@@ -3051,7 +2813,7 @@
             const card = document.getElementById(cardId);
             const chart = document.getElementById(chartId);
             
-            if (!card || !chart) return; // Add check to prevent errors
+            if (!card || !chart) return; 
             
             const icon = card.querySelector(`[onclick*="toggleFullscreen('${cardId}'"] i`);
 
@@ -3061,16 +2823,15 @@
             if (card.classList.contains('card-fullscreen')) {
                 if(icon) {
                     icon.classList.remove('fa-expand');
-                    icon.classList.add('fa-compress'); // เปลี่ยนเป็นไอคอนย่อ
+                    icon.classList.add('fa-compress'); 
                 }
             } else {
                  if(icon) {
                     icon.classList.remove('fa-compress');
-                    icon.classList.add('fa-expand'); // เปลี่ยนกลับเป็นไอคอนขยาย
+                    icon.classList.add('fa-expand'); 
                 }
             }
 
-            // สั่งให้ Plotly วาดกราฟใหม่เพื่อให้พอดีกับขนาดจอใหม่ (เช็คก่อนว่าเป็นกราฟ Plotly หรือไม่)
             setTimeout(() => {
                 if (typeof Plotly !== 'undefined' && chart.classList.contains('js-plotly-plot')) {
                     Plotly.Plots.resize(chart);
@@ -3079,14 +2840,12 @@
         }
 
         function switchTab(id, fromHistory = false) {
-            // Handle Browser History
             if (!fromHistory) {
                 if (!history.state || history.state.view !== id) {
                     history.pushState({ view: id, isDrilldown: false }, '', '#' + id);
                 }
             }
 
-            // Restore Raw Data table to full filtered list if not in a drilldown state
             if (id === 'rawdata' && history.state && !history.state.isDrilldown) {
                 if (currentFilteredData.length > 0 && currentRenderData !== currentFilteredData) {
                     currentPage = 1;
@@ -3107,17 +2866,13 @@
                      const el = document.getElementById(cId);
                      if(el && el.offsetParent !== null) { Plotly.Plots.resize(el); }
                 });
-                // ECharts Resize
                 if(id === 'phrase') {
-                    // Lazy load ECharts if needed
                     if (phraseDataStore && phraseDataStore.length > 0) {
-                         // Add a tiny delay to ensure container has dimensions
                          setTimeout(() => {
                              renderEChartsAdvanced(phraseDataStore);
-                         }, 200); // Increased delay
+                         }, 200); 
                     }
-                    
-                    const echartsContainers = ['echart-heatmap', 'echart-sankey'];
+                    const echartsContainers = ['echart-sankey'];
                     echartsContainers.forEach(eid => {
                         const instance = echarts.getInstanceByDom(document.getElementById(eid));
                         if(instance) instance.resize();
@@ -3132,15 +2887,17 @@
                 const el = document.getElementById(id);
                 if(el) Plotly.Plots.resize(el);
             });
+            
+            const echartsContainers = ['echart-sankey'];
+            echartsContainers.forEach(eid => {
+                const instance = echarts.getInstanceByDom(document.getElementById(eid));
+                if(instance) instance.resize();
+            });
         });
 
-        // --- 10. BROWSER HISTORY ROUTING (BACK BUTTON SUPPORT) ---
         window.addEventListener('popstate', function(event) {
             if (event.state && event.state.view) {
-                // Switch back to the previous tab
                 switchTab(event.state.view, true);
-                
-                // If returning to a normal tab (not a drilldown), ensure table resets
                 if (!event.state.isDrilldown && currentFilteredData.length > 0) {
                      renderRawTable(currentFilteredData);
                 }
